@@ -1,0 +1,77 @@
+# Configuration with real values (template is tracked, config.yaml is not)
+config.yaml
+config.local.yaml
+
+# Environment files
+.env
+.env.*
+
+# Log files
+*.log
+logs/
+
+# Data directories
+data/
+cache/
+market_data_cache/
+
+# Jupyter notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Pickle and Excel output
+*.pkl
+*.pickle
+*.xlsx
+*.xls
+!config.example.yaml
+!fixtures/*.xlsx
+
+# Credentials
+*.pem
+*.key
+credentials*
+secrets*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Output directories
+output/
+outputs/
+results/
+
+# HDF5 data files
+*.h5
+*.hdf5
+
+# Parquet data files
+*.parquet
+
+# SQLite databases
+*.sqlite
+*.db

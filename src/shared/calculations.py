@@ -2988,3 +2988,28 @@ def apply_primary_filters_with_leniency_v92(ticker1, ticker2, tag, tail, hist1, 
     filter_results['model'] = 'single_factor'
 
     return overall_passed, filter_results
+
+
+def get_megacap_tickers_for_fetch():
+    """
+    Return megacap tickers that need special handling in index return calculations.
+
+    This reads the tickers file from calibration output and identifies
+    megacap constituents. Used by fetch_market_data to adjust index
+    returns for megacap weighting.
+
+    Returns
+    -------
+    list of str
+        Megacap ticker symbols, or empty list if data unavailable.
+    """
+    try:
+        tickers_file = config.get_tickers_file()
+        if not os.path.exists(tickers_file):
+            return []
+        megacaps_df = pd.read_excel(tickers_file, sheet_name="Megacaps")
+        if "Ticker" in megacaps_df.columns:
+            return megacaps_df["Ticker"].dropna().tolist()
+        return []
+    except Exception:
+        return []

@@ -793,7 +793,7 @@ async def fetch_live_prices_batch_v2(ib, tickers, timeout=30):
     """
     # Add megacap tickers for index return adjustment
     try:
-        from src.shared.tool_box import get_megacap_tickers_for_fetch
+        from src.shared.calculations import get_megacap_tickers_for_fetch
         megacap_tickers = get_megacap_tickers_for_fetch()
         original_count = len(tickers)
         tickers = list(set(tickers) | megacap_tickers)
@@ -1000,7 +1000,7 @@ async def fetch_all_data(tickers, ib, treasury_earliest, treasury_latest,
 
     # Add megacap tickers for index return adjustment
     try:
-        from src.shared.tool_box import get_megacap_tickers_for_fetch
+        from src.shared.calculations import get_megacap_tickers_for_fetch
         megacap_tickers = get_megacap_tickers_for_fetch()
         original_count = len(tickers)
         tickers = list(set(tickers) | megacap_tickers)

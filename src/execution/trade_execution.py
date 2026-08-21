@@ -35,7 +35,6 @@ from src.shared.constraints import (
 from src.shared.config_helper import should_use_limit_orders
 from src.shared import calculations as Tool_Box
 from src.shared.calculations import BetaDataManager
-from src.execution import portfolio_management as pm
 
 # Market data fetching
 from src.shared.fetch_market_data import (
@@ -2002,7 +2001,7 @@ async def execute_single_pair_trade(trade_spec, ib, live_prices,
             'Leg1_Target': 0, 'Leg2_Target': 0
         }
     
-async def execute_trades_in_batches(evaluated_trades_df, portfolio_df, parameters_df,
+async def execute_trades_in_batches(evaluated_trades_df,
                                    ib, live_prices, index_price_current, dgs10_price_current,
                                    batch_size=5):
     """
@@ -2161,35 +2160,7 @@ async def execute_trades_in_batches(evaluated_trades_df, portfolio_df, parameter
         for _, trade in failed.iterrows():
             logger.info(f"  ✗ {trade['Pair']}: {trade['Details']}")
     
-    # ========================================================================
-    # Update portfolio with successful trades only
-    # ========================================================================
-    
-    # Get pairs that executed successfully
-    successful_pairs = successful['Pair'].tolist()
-    
-    if successful_pairs:
-        # Filter evaluated trades to only successful ones
-        executed_trades = evaluated_trades_df[
-            evaluated_trades_df['Pair'].isin(successful_pairs)
-        ].copy()
-        
-        # Add trade dates
-        executed_trades = pm.add_trade_dates(executed_trades)
-        
-        # Append to portfolio
-        portfolio_df = pm.append_executed_trades(
-            portfolio_df,
-            executed_trades,
-            parameters_df
-        )
-        
-        logger.info(f"\n✓ Added {len(executed_trades)} trades to portfolio")
-        logger.info(f"  Portfolio now has {len(portfolio_df)} total positions")
-    else:
-        logger.warning("\n⚠️  No trades successfully executed")
-    
-    return portfolio_df, execution_summary_df
+    return execution_summary_df
 
 # ============================================================================
 # AGGREGATED EXECUTION (ORDER NETTING)
@@ -2363,7 +2334,7 @@ def reconstruct_pair_results_from_allocations(execution_results, evaluated_trade
     
     return results
 
-async def execute_trades_with_aggregation(evaluated_trades_df, portfolio_df, parameters_df,
+async def execute_trades_with_aggregation(evaluated_trades_df,
                                          ib, live_prices, index_price_current, dgs10_price_current):
     """
     Execute trades with order aggregation (commission reduction mode)
@@ -2505,35 +2476,7 @@ async def execute_trades_with_aggregation(evaluated_trades_df, portfolio_df, par
         for _, trade in failed.iterrows():
             logger.info(f"  ✗ {trade['Pair']}: {trade['Details']}")
     
-    # ========================================================================
-    # STEP 5: Update Portfolio (same as existing workflow)
-    # ========================================================================
-    
-    # Get pairs that executed successfully
-    successful_pairs = successful['Pair'].tolist()
-    
-    if successful_pairs:
-        # Filter evaluated trades to only successful ones
-        executed_trades = evaluated_trades_df[
-            evaluated_trades_df['Pair'].isin(successful_pairs)
-        ].copy()
-        
-        # Add trade dates
-        executed_trades = pm.add_trade_dates(executed_trades)
-        
-        # Append to portfolio
-        portfolio_df = pm.append_executed_trades(
-            portfolio_df,
-            executed_trades,
-            parameters_df
-        )
-        
-        logger.info(f"\n✓ Added {len(executed_trades)} trades to portfolio")
-        logger.info(f"  Portfolio now has {len(portfolio_df)} total positions")
-    else:
-        logger.warning("\n⚠️  No trades successfully executed")
-    
-    return portfolio_df, execution_summary_df
+    return execution_summary_df
 
 async def execute_terminations(to_terminate_df, ib, live_prices):
     """

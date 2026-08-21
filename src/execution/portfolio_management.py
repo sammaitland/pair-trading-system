@@ -25,8 +25,11 @@ from src.shared import config_helper as Config_Helper
 from src.shared import constraints as Constraints
 from src.shared import calculations as Tool_Box
 from src.shared.calculations import BetaDataManager, get_subsector_manager, load_subsector_indices
-from src.execution import trade_execution as Trade_Execution
-from src.execution.trade_execution import calculate_weighted_spread, fetch_market_data, get_account_summary_values
+
+# NOTE: Trade_Execution is NOT imported at module level to avoid a circular
+# dependency (TE previously imported PM). Functions that need TE utilities
+# use lazy imports inside their function bodies. See
+# docs/decisions/circular_dependency_fix.md for rationale.
 
 logger = logging.getLogger(__name__)
 
@@ -1087,10 +1090,12 @@ async def evaluate_trades(shortlist_df, parameters_df, portfolio_df,
         Dict of sector ETF prices {etf: price}
         e.g., {'VGT': 762.50, 'VIS': 310.20, 'VHT': 294.35, 'VCR': 385.10}
     """
+    from src.execution.trade_execution import calculate_weighted_spread
+
     logger.info("=" * 80)
     logger.info("EVALUATING TRADES (MULTI-CONSTRAINT OPTIMIZATION)")
     logger.info("=" * 80)
-    
+
     if shortlist_df.empty:
         logger.info("Empty shortlist - no trades to evaluate")
         return pd.DataFrame()
@@ -1190,6 +1195,7 @@ async def evaluate_trades(shortlist_df, parameters_df, portfolio_df,
     logger.info(f"  Current portfolio value: ${total_portfolio_value:,.2f}")
     
     if ib and ib.isConnected():
+        from src.execution.trade_execution import get_account_summary_values
         account_values = get_account_summary_values(ib)
         account_currency = account_values.get('Currency', 'USD')
         
@@ -1268,7 +1274,8 @@ async def evaluate_trades(shortlist_df, parameters_df, portfolio_df,
         from src.execution.trade_execution import connect_ibkr
         ib = connect_ibkr()
         close_ib = True
-    
+
+    from src.execution.trade_execution import fetch_market_data
     try:
         # First pass - standard fetch
         for ticker in all_tickers:

@@ -988,23 +988,33 @@ async def run_portfolio_workflow():
             else:
                 if connected and ib and ib.isConnected():
                     if config.ENABLE_ORDER_AGGREGATION:
-                        logger.info("📦 Using ORDER AGGREGATION")
-                        portfolio_df, execution_summary = await execute_trades_with_aggregation(
-                            evaluated_trades_df, portfolio_df, parameters_df,
+                        logger.info("Using ORDER AGGREGATION")
+                        execution_summary = await execute_trades_with_aggregation(
+                            evaluated_trades_df,
                             ib, simple_prices, index_price, dgs10_price
                         )
                     else:
-                        logger.info("📋 Using STANDARD EXECUTION")
-                        portfolio_df, execution_summary = await execute_trades_in_batches(
-                            evaluated_trades_df, portfolio_df, parameters_df,
+                        logger.info("Using STANDARD EXECUTION")
+                        execution_summary = await execute_trades_in_batches(
+                            evaluated_trades_df,
                             ib, simple_prices, index_price, dgs10_price
                         )
 
+                    # Record successful trades to portfolio
                     if not execution_summary.empty:
                         successful = execution_summary[
                             execution_summary['Status'].isin(['Executed', 'Partial'])
                         ]
-                        logger.info(f"✓ Successfully executed: {len(successful)}/{len(evaluated_trades_df)} trades")
+                        if not successful.empty:
+                            successful_pairs = successful['Pair'].tolist()
+                            executed_trades = evaluated_trades_df[
+                                evaluated_trades_df['Pair'].isin(successful_pairs)
+                            ].copy()
+                            executed_trades = pm.add_trade_dates(executed_trades)
+                            portfolio_df = pm.append_executed_trades(
+                                portfolio_df, executed_trades, parameters_df
+                            )
+                        logger.info(f"Successfully executed: {len(successful)}/{len(evaluated_trades_df)} trades")
                 else:
                     logger.error("❌ Cannot execute - no IBKR connection")
 

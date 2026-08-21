@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "v9-pairs"
+version = "0.1.0"
+description = "Calibration-live parity architecture for a statistical pairs trading system"
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "openpyxl>=3.1",
+    "ib_insync>=0.9.86",
+    "yfinance>=0.2",
+    "pytz",
+    "nest_asyncio",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+calibration = [
+    "scikit-learn>=1.2",
+    "statsmodels>=0.14",
+    "matplotlib>=3.7",
+    "seaborn>=0.12",
+    "requests>=2.28",
+    "h5py>=3.8",
+    "tqdm>=4.64",
+]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

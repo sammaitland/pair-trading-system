@@ -1,0 +1,429 @@
+# =============================================================================
+# V9 Pairs Trading System — Configuration Template
+# =============================================================================
+#
+# Copy this file to config.yaml and fill in your values.
+# config.yaml is gitignored and must never be committed.
+#
+# Every field is documented with its purpose and units.
+# No default values are provided for strategy parameters.
+# Operational parameters have sensible defaults noted in comments.
+
+# =============================================================================
+# Trading Environment
+# =============================================================================
+
+trading_env:          # 'paper' or 'live'
+
+# =============================================================================
+# Version Control
+# =============================================================================
+# The system supports multiple calibration versions simultaneously.
+# ACTIVE_VERSION is used for new trade entries.
+# SUPPORTED_VERSIONS lists all versions the system can still process
+# (for existing trades calibrated under older versions).
+
+active_version:       # e.g. 'V9.3'
+supported_versions:   # list, e.g. ['V9.2']
+
+# =============================================================================
+# Directory Paths
+# =============================================================================
+# All paths are relative to a configurable base directory.
+# Modules must use these paths; no hardcoding is permitted.
+
+paths:
+  base_dir:             # Root directory for all V9 data
+  implementation_dir:   # Shared resources across versions (portfolio, completed trades)
+  options_cache_dir:    # Raw IV data by ticker (shared, not version-specific)
+  cache_dir:            # Session-based market data cache
+
+# =============================================================================
+# IBKR Connection
+# =============================================================================
+
+ibkr:
+  host:                 # Broker gateway host (typically '127.0.0.1')
+  live_port:            # TWS live trading port (integer)
+  paper_port:           # TWS paper trading port (integer)
+  account_id:           # IBKR account identifier
+  data_capture_port:    # Port for data capture connection (integer)
+  max_retries:          # Connection retry count (suggested: 3)
+  order_timeout_seconds: # Per-order timeout in seconds (suggested: 60)
+
+# =============================================================================
+# API Keys
+# =============================================================================
+
+api_keys:
+  alphavantage:         # Alpha Vantage API key (string)
+
+# =============================================================================
+# Sector Index ETFs
+# =============================================================================
+
+index_etfs:             # list of sector ETF tickers, e.g. ['VGT', 'VIS', 'VCR', 'VHT', 'VFH']
+
+# =============================================================================
+# Portfolio Risk Limits
+# =============================================================================
+# All beta values are dimensionless ratios.
+# Concentration values are fractions of total portfolio value.
+
+risk:
+  max_portfolio_beta:               # Upper bound on portfolio beta (dimensionless)
+  min_portfolio_beta:               # Lower bound on portfolio beta (dimensionless)
+  target_portfolio_beta:            # Target portfolio beta (dimensionless)
+  allow_corrective_trades:          # bool — allow trades that move beta toward target
+
+  max_long_ticker_concentration:    # Maximum long exposure per ticker (fraction)
+  max_short_ticker_concentration:   # Maximum short exposure per ticker (fraction)
+
+  max_account_leverage:             # Maximum gross exposure / equity (ratio)
+  margin_safety_buffer:             # Buffer below maintenance margin (fraction)
+  emergency_leverage_threshold:     # Stop all new trades above this leverage (ratio)
+
+  max_index_gross_exposure_pct:     # No single index above this fraction of gross
+  max_index_dollar_beta_concentration: # Threshold for index-specific beta limits (fraction)
+  index_specific_min_beta:          # Per-index lower beta bound when concentrated (dimensionless)
+  index_specific_max_beta:          # Per-index upper beta bound when concentrated (dimensionless)
+
+# =============================================================================
+# Position Sizing
+# =============================================================================
+# BASE_TRADE_SIZE is the notional per trade in USD before multipliers.
+
+sizing:
+  base_trade_size:                  # Notional per trade in USD (integer)
+  min_position_size:                # Minimum position size in USD
+  max_position_size:                # Maximum position size in USD
+  max_new_positions_per_ticker:     # Per-run limit on new positions per ticker (integer)
+
+# =============================================================================
+# Portfolio Building Phase (relaxed limits for small portfolios)
+# =============================================================================
+
+portfolio_building:
+  min_value_for_strict_constraints: # USD value below which relaxed limits apply
+  min_trades_for_concentration:     # Skip concentration checks below this trade count
+  relaxed_min_beta:                 # Relaxed lower beta bound (dimensionless)
+  relaxed_max_beta:                 # Relaxed upper beta bound (dimensionless)
+  relaxed_max_long_concentration:   # Relaxed long concentration (fraction)
+  relaxed_max_short_concentration:  # Relaxed short concentration (fraction)
+
+# =============================================================================
+# VHT Small-Cap Constraint
+# =============================================================================
+
+vht_small_cap:
+  enabled:                          # bool
+  mcap_threshold_millions:          # Market cap threshold in millions USD
+  concentration_reduction:          # Reduction from normal concentration limit (fraction)
+
+# =============================================================================
+# Factor Exposure Limits
+# =============================================================================
+# Maximum net factor exposure as a fraction of gross exposure.
+
+factor_exposure:
+  limits:                           # dict of {factor_ticker: max_fraction}
+  min_beta:                         # Minimum |beta| to consider (dimensionless)
+  min_r2:                           # Minimum R-squared to consider (dimensionless)
+  allow_corrective_trades:          # bool
+
+# =============================================================================
+# Pre-Filter Leniency
+# =============================================================================
+# The pre-filter runs before LAM with relaxed thresholds to identify candidates.
+# Values here control how much looser the pre-filter is relative to strict mode.
+
+prefilter:
+  cdf_adjustment:                   # CDF threshold relaxation (dimensionless)
+  two_day_reduction:                # 2-day threshold reduction (fraction)
+  sum_dev_neutral_zone:             # (lower, upper) CDF bounds for exclusion zone
+  skip_spread:                      # bool
+  skip_same_direction:              # bool
+  skip_nominal_direction:           # bool
+  skip_earnings:                    # bool
+  earnings_days_ahead:              # Trading days ahead to check (integer)
+  earnings_days_behind:             # Trading days behind to check (integer)
+  tstat_filter:
+    skip:                           # bool — skip t-stat filter at prefilter stage
+    threshold:                      # T-stat threshold for pair filtering (dimensionless)
+    lookback_days:                  # Lookback period in trading days (integer)
+
+# =============================================================================
+# Spread Constraints
+# =============================================================================
+# Spread thresholds in basis points (1 bp = 0.01%).
+
+spreads:
+  prefilter_max_spread_bps:         # Pre-filter spread threshold (basis points)
+  max_spread_bps:                   # Strict spread threshold (basis points)
+
+# =============================================================================
+# Trade Priority Scoring
+# =============================================================================
+# Weights for composite priority score. Must sum to 1.0.
+
+priority_weights:
+  weighted_score:                   # Weight for LAM secondary signals (fraction)
+  spread_quality:                   # Weight for spread quality (fraction)
+  sum_dev_extremity:                # Weight for sum deviation extremity (fraction)
+
+# =============================================================================
+# Strategy Configuration — Leg Weights & Position Sizing
+# =============================================================================
+# Keyed by strategy ('lower', 'upper') then by CDF bucket ('0-10%', etc.).
+# leg_weights: (stock1_weight, stock2_weight) — must sum to 1.0
+# position_sizes: multiplier applied to base_trade_size (0 = excluded bucket)
+
+strategy_config:
+  lower:
+    leg_weights:                    # dict of {bucket: [w1, w2]}
+    position_sizes:                 # dict of {bucket: multiplier}
+  upper:
+    leg_weights:                    # dict of {bucket: [w1, w2]}
+    position_sizes:                 # dict of {bucket: multiplier}
+
+# =============================================================================
+# Index-Specific Biases for Secondary Signal Scoring
+# =============================================================================
+# Multipliers applied to composite scores per sector index and tail.
+# < 1.0 = conservative (reduce score), > 1.0 = aggressive (boost score).
+
+index_biases:                       # dict of {index: {lower: float, upper: float}}
+
+# =============================================================================
+# Secondary Signal Configuration
+# =============================================================================
+# Filters and retention rates from calibration output.
+# stability_weights: per-signal weight for composite scoring.
+
+secondary_signals:
+  lower:
+    filters:                        # list of signal names
+    retention_rate:                 # fraction of candidates retained
+  upper:
+    filters:                        # list of signal names
+    retention_rate:                 # fraction of candidates retained
+  stability_weights:                # dict of {signal_name: weight}
+
+# =============================================================================
+# Early Exit Configuration
+# =============================================================================
+# Take-profit exits based on cumulative alpha thresholds.
+
+early_exit:
+  enabled:                          # bool — master switch
+  lower:
+    enabled:                        # bool
+    exit_day:                       # Check starting this day (integer)
+    threshold_pct:                  # Cumulative alpha threshold (percentage)
+    direction:                      # 'above' or 'below'
+  upper:
+    enabled:                        # bool
+    exit_day:                       # Check starting this day (integer)
+    threshold_pct:                  # Cumulative alpha threshold (percentage)
+    direction:                      # 'above' or 'below'
+
+# =============================================================================
+# Exit & Termination Rules
+# =============================================================================
+
+exits:
+  max_holding_days:                 # Maximum holding period in trading days (integer)
+  earnings_lookback_days:           # Exit this many days before earnings (integer)
+  earnings_exclusion_days_ahead:    # Earnings exclusion window — future days (integer)
+  earnings_exclusion_days_behind:   # Earnings exclusion window — past days (integer)
+
+# =============================================================================
+# Stop-Loss Protection
+# =============================================================================
+
+stop_loss:
+  execute_stops:                    # bool — master switch for stop execution
+  enable_short_squeeze_protection:  # bool
+  alpha_threshold:                  # Cumulative alpha deterioration trigger (fraction)
+  tag_prefix:                       # TWS order tag prefix (string)
+
+# =============================================================================
+# Trending Stock Filter
+# =============================================================================
+
+trending_filter:
+  enabled:                          # bool
+  positive_threshold:               # Excess positive return threshold (fraction)
+  positive_lookback_months:         # Lookback period in months (integer)
+  negative_threshold:               # Excess negative return threshold (fraction, negative)
+  negative_lookback_months:         # Lookback period in months (integer)
+
+# =============================================================================
+# Market Cap Filter
+# =============================================================================
+
+mcap_filter:
+  enabled:                          # bool
+  min_market_cap_millions:          # Minimum market cap in millions USD
+
+# =============================================================================
+# Limit Order Settings
+# =============================================================================
+
+limit_orders:
+  strategy:                         # 'AGGRESSIVE', 'PASSIVE', or 'MID'
+  buffer_cents:                     # Buffer beyond bid/ask in USD (float)
+  max_spread_bps:                   # Maximum acceptable spread for limit orders (basis points)
+  timeout_seconds:                  # Cancel after this many seconds (integer, suggested: 45)
+  retry_delay_seconds:              # Wait after partial fill (integer, suggested: 2)
+
+# =============================================================================
+# Exit Limit Order Settings
+# =============================================================================
+
+exit_limits:
+  buffer_pct:                       # Buffer beyond bid/ask (fraction, suggested: 0.005)
+  timeout_seconds:                  # Fallback to market after this (integer, suggested: 30)
+  remedy_buffer_pct:                # Reconciliation remedy buffer (fraction, suggested: 0.005)
+  remedy_timeout_seconds:           # Remedy timeout (integer, suggested: 20)
+
+# =============================================================================
+# Termination Order Offsets
+# =============================================================================
+
+termination_offsets:
+  alpha:                            # Price offset for alpha-based exits (USD)
+  date:                             # Price offset for date-based exits (USD)
+  earnings:                         # Price offset for earnings-based exits (USD)
+
+# =============================================================================
+# Order Aggregation
+# =============================================================================
+
+aggregation:
+  enabled:                          # bool
+  min_threshold:                    # Minimum ticker appearances to aggregate (integer, suggested: 3)
+  allocation_mode:                  # 'priority' or 'proportional'
+
+# =============================================================================
+# Market Data Settings
+# =============================================================================
+
+market_data:
+  price_staleness_threshold:        # Seconds before price is considered stale (suggested: 300)
+  default_timeout:                  # Per-request timeout in seconds (suggested: 10)
+  historical_lookback_days:         # Days of historical data to fetch (suggested: 365)
+  volume_lookback_days:             # Days of volume data for analysis (suggested: 30)
+  dgs10_default_yield:              # Fallback treasury yield in percent (float)
+  dgs10_cache_duration:             # Cache duration in seconds (suggested: 300)
+
+# =============================================================================
+# Megacap Adjustment
+# =============================================================================
+
+megacap_adjustment:
+  enabled:                          # bool
+  use_relative_scaling:             # bool — adjust weights based on relative price changes
+  scaling_lookback_days:            # Days of price history for scaling (suggested: 30)
+  cache_duration_seconds:           # Weight cache duration in seconds (suggested: 3600)
+
+# =============================================================================
+# Reconciliation
+# =============================================================================
+
+reconciliation:
+  tolerance_usd:                    # Dollar threshold for immaterial positions (suggested: 100)
+  auto_on_startup:                  # bool
+  include_options:                  # bool
+
+# =============================================================================
+# Structural Exclusion Lists
+# =============================================================================
+# These are NOT strategy parameters — they are structural decisions about which
+# asset classes are unsuitable for the pairs trading framework.
+#
+# Crypto proxies: Driven by an uncorrelated, non-mean-reverting asset.
+#   Beta estimation against sector indices produces unstable, misleading
+#   coefficients because price movements are dominated by crypto correlation
+#   rather than sector dynamics.
+#
+# Mortgage REITs: Interest-rate proxies rather than equity-like instruments.
+#   Their returns are dominated by yield-curve shape and prepayment risk,
+#   making beta-adjusted alpha calculations unreliable as a mean-reversion
+#   signal.
+
+exclusion_lists:
+  crypto_tickers:                   # list of ticker symbols
+    # Each entry should have format: {ticker: str, rationale: str}
+  mreit_tickers:                    # list of ticker symbols
+    # Each entry should have format: {ticker: str, rationale: str}
+
+# =============================================================================
+# Logging
+# =============================================================================
+
+logging:
+  level:                            # 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'
+  console_level:                    # Console log level (suggested: 'WARNING')
+  max_bytes:                        # Max log file size in bytes (suggested: 10485760)
+  backup_count:                     # Number of backup log files (suggested: 5)
+
+# =============================================================================
+# Factor Shock Detection
+# =============================================================================
+# These parameters control the factor shock detection subsystem, which is
+# separate from the pair-level t-stat filter. The thresholds here are
+# intentionally different from the prefilter t-stat values.
+
+factor_shock:
+  lookback_days:                    # Factor analysis lookback in trading days
+  recalibration_freq_days:          # Days between recalibrations
+  min_observations:                 # Minimum data points for regression
+  min_r2_step1:                     # Minimum R-squared for factor screening (dimensionless)
+  shock_lookback_days:              # Shock detection window in trading days
+  shock_threshold_sigma:            # Z-score threshold for shock detection (dimensionless)
+  shock_tstat_threshold:            # T-stat threshold for factor shock significance (dimensionless)
+  shock_tstat_lookback:             # T-stat lookback in trading days (integer)
+  cost_pct:                         # Estimated transaction cost (fraction)
+  holding_days:                     # Assumed holding period in trading days (integer)
+  index_suppression_thresholds:     # dict of {index: threshold}
+  index_alert_thresholds:           # dict of {index: threshold}
+  index_trading_params:             # dict of {index: {ema_multiplier, cdf_threshold_lower, cdf_threshold_upper}}
+
+# =============================================================================
+# Beta Estimation
+# =============================================================================
+
+beta_estimation:
+  lookback_days:                    # Rolling beta lookback in trading days
+  recalibration_freq:               # Trading days between recalibrations
+  min_data_points:                  # Minimum observations for beta calculation
+  min_beta_threshold_percentile:    # Exclude tickers below this beta percentile
+  max_r2_threshold_percentile:      # Exclude tickers above this R-squared percentile
+  min_r2_threshold:                 # Absolute R-squared floor (dimensionless)
+  min_mcap_diff_percentile:         # Market cap difference filter percentile
+  index_cluster_counts:             # dict of {index: n_clusters}
+  adaptive_clustering:
+    min_clusters:                   # Minimum cluster count
+    max_clusters:                   # Maximum cluster count
+    min_stocks_per_cluster:         # Minimum stocks per cluster
+    close_score_threshold:          # Threshold for adaptive clustering (dimensionless)
+
+# =============================================================================
+# Universe Determination
+# =============================================================================
+
+universe:
+  megacap_statistical_multiplier:   # Z-score threshold for megacap detection (dimensionless)
+  megacap_threshold_multiplier:     # Alternative megacap threshold (dimensionless)
+  min_weight_threshold:             # Minimum fund weight for megacap (fraction)
+  min_absolute_mcap:                # Minimum market cap in USD
+
+# =============================================================================
+# Calibrated Dispersion Parameter
+# =============================================================================
+# The global standard deviation used to convert sum deviation into a CDF
+# percentile. This is fitted during calibration and must match between the
+# calibration pipeline and the live implementation.
+
+sum_deviation_global_std:           # Standard deviation (dimensionless, fitted)

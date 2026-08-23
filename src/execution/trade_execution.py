@@ -39,7 +39,6 @@ from src.shared.calculations import BetaDataManager
 # Market data fetching
 from src.shared.fetch_market_data import (
     fetch_live_prices_batch,
-    get_today_dgs10_close
 )
 
 
@@ -279,10 +278,6 @@ beta_manager = BetaDataManager()
 # ============================================================================
 # MARKET DATA CACHING
 # ============================================================================
-
-_cached_dgs10_price = None
-_last_dgs10_fetch_time = None
-_dgs10_cache_duration = 300  # 5 minutes
 
 # ============================================================================
 # IBKR CONNECTION
@@ -1071,51 +1066,6 @@ def get_live_index_price(ib=None):
         if close_connection:
             ib.disconnect()
 
-def get_live_dgs10_price(target_dgs10=None):
-    """
-    Get live DGS10 treasury yield
-    
-    CRITICAL: Uses DGS10, not FVX
-    
-    Parameters:
-        target_dgs10: Optional override value
-    
-    Returns:
-        float: DGS10 yield as percentage
-    """
-    global _cached_dgs10_price, _last_dgs10_fetch_time
-    current_time = datetime.now()
-    
-    # Use target if provided
-    if target_dgs10 is not None:
-        logger.info(f"Using provided DGS10: {target_dgs10}")
-        return target_dgs10
-    
-    # Check cache
-    if (_cached_dgs10_price is not None and 
-        _last_dgs10_fetch_time is not None and 
-        (current_time - _last_dgs10_fetch_time).total_seconds() < _dgs10_cache_duration):
-        logger.info(f"Using cached DGS10: {_cached_dgs10_price}")
-        return _cached_dgs10_price
-    
-    # Fetch fresh data
-    logger.info("Fetching fresh DGS10 data")
-    dgs10_yield = get_today_dgs10_close()
-    
-    if dgs10_yield is not None and not pd.isna(dgs10_yield) and 0 < dgs10_yield < 10:
-        _cached_dgs10_price = dgs10_yield
-        _last_dgs10_fetch_time = current_time
-        logger.info(f"DGS10 yield: {dgs10_yield:.4f}%")
-        return dgs10_yield
-    
-    # Fallback
-    if _cached_dgs10_price is not None:
-        logger.warning(f"Using last cached DGS10: {_cached_dgs10_price}")
-        return _cached_dgs10_price
-    
-    logger.warning(f"Using default DGS10: {config.dgs10_default_yield()}%")
-    return config.dgs10_default_yield()
-
 def fetch_market_data(ib, ticker, retries=3, delay=3):
     """
     Fetch market data for a ticker
@@ -1130,14 +1080,7 @@ def fetch_market_data(ib, ticker, retries=3, delay=3):
         tuple: (bid, ask) or (None, None)
     """
     from ib_insync import Stock
-    
-    # Special handling for DGS10
-    if ticker.upper() in ["DGS10", "^DGS10"]:
-        dgs10_yield = get_live_dgs10_price()
-        if dgs10_yield is not None:
-            return dgs10_yield, dgs10_yield
-        return None, None
-    
+
     # Regular stock tickers
     for attempt in range(1, retries + 1):
         try:
@@ -1199,15 +1142,7 @@ def fetch_all_live_prices(ib, tickers, max_retries=2, delay=2):
     logger.info(f"Fetching {len(tickers)} prices (sync)")
     
     prices = {}
-    
-    # Handle DGS10
-    if 'DGS10' in tickers or '^DGS10' in tickers:
-        dgs10_price = get_live_dgs10_price()
-        if dgs10_price is not None:
-            prices['DGS10'] = dgs10_price
-            prices['^DGS10'] = dgs10_price
-        tickers = [t for t in tickers if t not in ['DGS10', '^DGS10']]
-    
+
     # Handle VGT separately
     if 'VGT' in tickers:
         try:
@@ -1656,7 +1591,7 @@ def execute_immediate_termination(ib, trade, termination_type):
 # ============================================================================
 
 def create_trade_entry(tag, pair, ticker1, ticker2, qty1, qty2,
-                      live_prices, index_price, dgs10_price,
+                      live_prices, index_price,
                       tail, init_spread, W1, W2, pos_mult, original_row):
     """
     Create trade entry with all configuration details
@@ -1675,7 +1610,6 @@ def create_trade_entry(tag, pair, ticker1, ticker2, qty1, qty2,
         "Co1 at Initiation": live_prices.get(ticker1),
         "Co2 at Initiation": live_prices.get(ticker2),
         "Index at Initiation": live_prices.get(original_row.get('Index')) if live_prices else index_price,
-        "Treasury at Initiation": dgs10_price,  # DGS10, not FVX
         "Tail": tail,
         "Initiation Spread": init_spread,
         # Strategy configuration
@@ -1780,8 +1714,8 @@ def archive_completed_trades(terminated_trades_df, completed_trades_path):
         import traceback
         traceback.print_exc()
 
-async def execute_single_pair_trade(trade_spec, ib, live_prices, 
-                                   index_price_current, dgs10_price_current,
+async def execute_single_pair_trade(trade_spec, ib, live_prices,
+                                   index_price_current,
                                    portfolio_df=None, account_equity=None):
     """
     Execute a single pair trade asynchronously
@@ -2002,7 +1936,7 @@ async def execute_single_pair_trade(trade_spec, ib, live_prices,
         }
     
 async def execute_trades_in_batches(evaluated_trades_df,
-                                   ib, live_prices, index_price_current, dgs10_price_current,
+                                   ib, live_prices, index_price_current,
                                    batch_size=5):
     """
     Execute trades in small batches for faster execution while maintaining balance
@@ -2078,9 +2012,8 @@ async def execute_trades_in_batches(evaluated_trades_df,
                 ib=ib,
                 live_prices=live_prices,
                 index_price_current=index_price_current,
-                dgs10_price_current=dgs10_price_current,
                 portfolio_df=portfolio_df,
-                account_equity=account_equity  # ADD THIS LINE
+                account_equity=account_equity
             )
             batch_tasks.append(task)
         
@@ -2335,7 +2268,7 @@ def reconstruct_pair_results_from_allocations(execution_results, evaluated_trade
     return results
 
 async def execute_trades_with_aggregation(evaluated_trades_df,
-                                         ib, live_prices, index_price_current, dgs10_price_current):
+                                         ib, live_prices, index_price_current):
     """
     Execute trades with order aggregation (commission reduction mode)
     

@@ -34,7 +34,7 @@ from src.shared.calculations import (
     check_15day_alpha_variance_v92,
     check_2day_deviation_v92,
     align_historical_data_v92,
-    calculate_pair_alphas_v92,
+    calculate_net_alpha_series_v92,
     get_subsector_manager,
     load_subsector_indices,
     get_v92_output_dir,
@@ -590,7 +590,6 @@ class LiveAnalytics:
             for idx in index_tickers:
                 tickers_to_fetch.add(idx)
 
-            # No DGS10 needed
             tickers_to_fetch = list(tickers_to_fetch)
 
             print(f"Unique tickers to fetch: {len(tickers_to_fetch)}")

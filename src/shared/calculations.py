@@ -1908,8 +1908,6 @@ def calculate_net_alpha_series_v92(aligned_data, beta1_subsector, beta2_subsecto
     return pd.Series(net_alphas, index=aligned_data.index[1:])
 
 
-# Backward compatibility alias
-calculate_pair_alphas_v92 = calculate_net_alpha_series_v92
 
 
 def calculate_15day_net_alpha_v92(aligned_data, beta1_subsector, beta2_subsector,
@@ -1937,10 +1935,6 @@ def calculate_15day_net_alpha_v92(aligned_data, beta1_subsector, beta2_subsector
     return net_alphas.iloc[-15:].sum()
 
 
-# Backward compatibility alias
-calculate_15day_alpha_sum_v92 = calculate_15day_net_alpha_v92
-
-
 def calculate_2day_net_alpha_v92(aligned_data, beta1_subsector, beta2_subsector):
     """
     Calculate 2-day cumulative NET alpha using single-factor model.
@@ -1963,9 +1957,6 @@ def calculate_2day_net_alpha_v92(aligned_data, beta1_subsector, beta2_subsector)
 
     return net_alphas.iloc[-2:].sum()
 
-
-# Backward compatibility alias
-calculate_2day_alpha_sum_v92 = calculate_2day_net_alpha_v92
 
 
 def calculate_sum_deviation_v92(aligned_data, beta1_subsector, beta2_subsector,
@@ -2201,7 +2192,7 @@ def check_15day_alpha_variance_v92(ticker1, ticker2, tag, hist1, hist2,
             return False, 0.0, {"error": "Insufficient aligned data"}
 
         # Calculate alpha sum using single-factor model
-        alpha_sum = calculate_15day_alpha_sum_v92(
+        alpha_sum = calculate_15day_net_alpha_v92(
             aligned_data, beta1_subsector, beta2_subsector,
             earnings_dates, ticker1, ticker2
         )
@@ -2268,7 +2259,7 @@ def check_2day_deviation_v92(ticker1, ticker2, tag, hist1, hist2,
             return False, 0.0, {"error": "Insufficient aligned data"}
 
         # Calculate pair alphas using single-factor model
-        pair_alphas = calculate_pair_alphas_v92(
+        pair_alphas = calculate_net_alpha_series_v92(
             aligned_data, beta1_subsector, beta2_subsector
         )
 

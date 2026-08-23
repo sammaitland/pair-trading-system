@@ -500,12 +500,6 @@ def historical_data_lookback_days():
 def volume_data_lookback_days():
     return get("market_data.volume_lookback_days", 30)
 
-def dgs10_default_yield():
-    return get("market_data.dgs10_default_yield", 4.0)
-
-def dgs10_cache_duration():
-    return get("market_data.dgs10_cache_duration", 300)
-
 # ---------------------------------------------------------------------------
 # Megacap adjustment
 # ---------------------------------------------------------------------------

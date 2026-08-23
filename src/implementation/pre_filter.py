@@ -22,7 +22,7 @@ from src.shared import config
 from src.shared.calculations import (
     apply_primary_filters_with_leniency_v92,
     align_historical_data_v92,
-    calculate_pair_alphas_v92,
+    calculate_net_alpha_series_v92,
     get_subsector_manager,
     load_subsector_indices,
     get_v92_output_dir,

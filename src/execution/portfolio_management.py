@@ -66,9 +66,8 @@ def initialize_beta_manager(parameters_file=None):
     # DEBUG: Check if betas actually loaded
     try:
         subsector_count = len(beta_manager._subsector_betas) if hasattr(beta_manager, '_subsector_betas') else 0
-        treasury_count = len(beta_manager._treasury_betas) if hasattr(beta_manager, '_treasury_betas') else 0
-        
-        logger.info(f"Beta manager loaded: {subsector_count} subsector betas, {treasury_count} treasury betas")
+
+        logger.info(f"Beta manager loaded: {subsector_count} subsector betas")
         
         # Show sample
         if subsector_count > 0:
@@ -330,7 +329,7 @@ def create_empty_portfolio():
         # Entry data
         'Trade Initiation Date',
         'Co1 at Initiation', 'Co2 at Initiation',
-        'Index at Initiation', 'Treasury at Initiation',
+        'Index at Initiation',
         'Entry_Spread_BPS',
         
         # Strategy configuration  
@@ -373,10 +372,10 @@ def create_empty_completed_trades():
         'Trade Initiation Date', 'Trade Termination Date', 'Holding_Days', 'Exit_Reason',
         
         # Entry prices
-        'Co1 at Initiation', 'Co2 at Initiation', 'Index at Initiation', 'Treasury at Initiation',
+        'Co1 at Initiation', 'Co2 at Initiation', 'Index at Initiation',
         
         # Exit prices  
-        'Co1 at Exit', 'Co2 at Exit', 'Index at Exit', 'Treasury at Exit',
+        'Co1 at Exit', 'Co2 at Exit', 'Index at Exit',
         
         # Position details
         'Quantity1', 'Quantity2', 'Trade Value Co1 ($)', 'Trade Value Co2 ($)', 'Total_Notional',
@@ -467,10 +466,10 @@ def save_completed_trades(terminated_trades_df, live_prices, completed_trades_fi
             'Trade Initiation Date', 'Trade Termination Date', 'Holding_Days', 'Exit_Reason',
             
             # Entry prices
-            'Co1 at Initiation', 'Co2 at Initiation', 'Index at Initiation', 'Treasury at Initiation',
+            'Co1 at Initiation', 'Co2 at Initiation', 'Index at Initiation',
             
             # Exit prices  
-            'Co1 at Exit', 'Co2 at Exit', 'Index at Exit', 'Treasury at Exit',
+            'Co1 at Exit', 'Co2 at Exit', 'Index at Exit',
             
             # Position details
             'Quantity1', 'Quantity2', 'Trade Value Co1 ($)', 'Trade Value Co2 ($)', 'Total_Notional',
@@ -892,21 +891,19 @@ def add_trade_dates(portfolio_df):
 # ============================================================================
 
 def update_live_alpha_returns(portfolio_df, parameters_df, live_prices=None,
-                              current_dgs10=None, fallback_to_previous=True,
+                              fallback_to_previous=True,
                               index_prices=None):
     """
     Update alpha returns using tool_box calculations with dynamic beta
-    
-    V9.2 UPDATE: Handles both V9 (two-factor) and V9.2 (single-factor) trades.
-    - V9 trades: Use VO index + DGS10 treasury with market betas
-    - V9.2 trades: Use parent ETF index with sub-sector betas (no treasury)
-    
+
+    V9.2+ uses single-factor model with parent ETF index and sub-sector betas.
+
     CRITICAL: Uses W1 from portfolio records for proper weighting
-    
+
     Parameters:
     -----------
     index_prices : dict, optional
-        Current ETF prices {etf_ticker: price} for V9.2 calculations
+        Current ETF prices {etf_ticker: price} for calculations
     """
     if portfolio_df.empty:
         logger.info("Empty portfolio - no alpha updates needed")
@@ -921,12 +918,6 @@ def update_live_alpha_returns(portfolio_df, parameters_df, live_prices=None,
     
     if index_prices is None:
         index_prices = {}
-    
-    # V9 fallbacks
-    if current_dgs10 is None:
-        current_dgs10 = config.dgs10_default_yield()
-    
-    current_vo_price = live_prices.get('VO', config.vo_default_price())
     
     # Load V9.2 sub-sector manager if any V9.2/V9.3 trades exist
     subsector_manager = None
@@ -943,7 +934,6 @@ def update_live_alpha_returns(portfolio_df, parameters_df, live_prices=None,
         logger.info("Loaded sub-sector manager for V9.2 trades")
     
     success_count = 0
-    v9_count = 0
     v92_count = 0
     missing_data_count = 0
     
@@ -987,71 +977,40 @@ def update_live_alpha_returns(portfolio_df, parameters_df, live_prices=None,
                 direction_co2 = 1
             
             # ================================================================
-            # V9.2/V9.3: Single-factor model with market betas (stock vs parent ETF)
+            # Single-factor model with market betas (stock vs parent ETF)
             # ================================================================
-            if trade_version in ['V9.2', '9.2', 'V9.3', '9.3']:
-                # Get current parent ETF price
-                # index_prices structure: {etf: {'initial': price, 'current': price}} or {etf: price}
-                etf_data = index_prices.get(trade_index)
-                if isinstance(etf_data, dict):
-                    current_index_price = etf_data.get('current')
-                else:
-                    current_index_price = etf_data or live_prices.get(trade_index)
-                
-                if current_index_price is None or pd.isna(current_index_price):
-                    logger.warning(f"Missing {trade_index} price for {trade_version} trade {ticker1}/{ticker2}")
-                    portfolio_df.at[index, 'Live Alpha Return (%)'] = 0.0
-                    missing_data_count += 1
-                    continue
-                
-                # Get market betas (stock vs parent ETF) for interpretable alpha
-                beta_co1 = Tool_Box.get_single_ticker_beta(ticker1, fallback=1.0)
-                beta_co2 = Tool_Box.get_single_ticker_beta(ticker2, fallback=1.0)
-                
-                # V9.2/V9.3 alpha calculation: single-factor with parent ETF
-                # Alpha = weighted_stock_return - weighted_beta * index_return
-                alpha = Tool_Box.calculate_live_alpha_return_v92(
-                    ticker1, ticker2,
-                    initial_price_co1, initial_price_co2,
-                    current_price_co1, current_price_co2,
-                    initial_index, current_index_price,  # Use parent ETF for both
-                    initial_index, current_index_price,  # Same index for both tickers
-                    beta_co1, beta_co2,
-                    W1, W2,
-                    direction_co1, direction_co2
-                )
-                
-                v92_count += 1
-            
-            # ================================================================
-            # V9: Two-factor model with VO index + treasury
-            # ================================================================
+            # Get current parent ETF price
+            # index_prices structure: {etf: {'initial': price, 'current': price}} or {etf: price}
+            etf_data = index_prices.get(trade_index)
+            if isinstance(etf_data, dict):
+                current_index_price = etf_data.get('current')
             else:
-                # Handle FVX -> DGS10 transition
-                initial_dgs10 = row.get('Treasury at Initiation')
-                if pd.isna(initial_dgs10):
-                    initial_dgs10 = row.get('FVX at Initiation', config.dgs10_default_yield())
-                
-                # Get V9 betas
-                beta_vo_co1 = beta_manager.get_vgt_beta(ticker1)
-                beta_treasury_co1 = beta_manager.get_treasury_beta(ticker1)
-                beta_vo_co2 = beta_manager.get_vgt_beta(ticker2)
-                beta_treasury_co2 = beta_manager.get_treasury_beta(ticker2)
-                
-                # V9 alpha calculation: two-factor model
-                alpha = Tool_Box.calculate_live_alpha_return(
-                    ticker1, ticker2,
-                    initial_price_co1, initial_price_co2,
-                    current_price_co1, current_price_co2,
-                    initial_index, current_vo_price,
-                    initial_dgs10, current_dgs10,
-                    beta_vo_co1, beta_treasury_co1,
-                    beta_vo_co2, beta_treasury_co2,
-                    W1, W2,
-                    direction_co1, direction_co2
-                )
-                
-                v9_count += 1
+                current_index_price = etf_data or live_prices.get(trade_index)
+
+            if current_index_price is None or pd.isna(current_index_price):
+                logger.warning(f"Missing {trade_index} price for {trade_version} trade {ticker1}/{ticker2}")
+                portfolio_df.at[index, 'Live Alpha Return (%)'] = 0.0
+                missing_data_count += 1
+                continue
+
+            # Get market betas (stock vs parent ETF) for interpretable alpha
+            beta_co1 = Tool_Box.get_single_ticker_beta(ticker1, fallback=1.0)
+            beta_co2 = Tool_Box.get_single_ticker_beta(ticker2, fallback=1.0)
+
+            # Single-factor alpha calculation with parent ETF
+            # Alpha = weighted_stock_return - weighted_beta * index_return
+            alpha = Tool_Box.calculate_live_alpha_return_v92(
+                ticker1, ticker2,
+                initial_price_co1, initial_price_co2,
+                current_price_co1, current_price_co2,
+                initial_index, current_index_price,  # Use parent ETF for both
+                initial_index, current_index_price,  # Same index for both tickers
+                beta_co1, beta_co2,
+                W1, W2,
+                direction_co1, direction_co2
+            )
+
+            v92_count += 1
             
             portfolio_df.at[index, 'Live Alpha Return (%)'] = alpha
             success_count += 1
@@ -1060,12 +1019,12 @@ def update_live_alpha_returns(portfolio_df, parameters_df, live_prices=None,
             logger.error(f"Error calculating alpha for row {index}: {e}")
             portfolio_df.at[index, 'Live Alpha Return (%)'] = 0.0
     
-    logger.info(f"Updated {success_count} alphas (V9: {v9_count}, V9.2: {v92_count}), {missing_data_count} missing data")
+    logger.info(f"Updated {success_count} alphas ({v92_count} single-factor), {missing_data_count} missing data")
     return portfolio_df
 
 async def evaluate_trades(shortlist_df, parameters_df, portfolio_df,
                          ib=None, live_prices=None,
-                         index_prices=None, dgs10_price=None):
+                         index_prices=None):
     # DIAGNOSTIC - remove after debugging
     print(f"\n🔍 SHORTLIST DIAGNOSTIC:")
     print(f"   Columns: {shortlist_df.columns.tolist()}")
@@ -2287,8 +2246,6 @@ async def evaluate_trades(shortlist_df, parameters_df, portfolio_df,
                 else live_prices.get(candidate.get('Index')) if live_prices 
                 else np.nan
             ),
-            'Treasury at Initiation': dgs10_price if dgs10_price else np.nan,
-
             # LAM signals - Raw values (CamelCase canonical)
             'Weighted_Score': candidate.get('Weighted_Score', np.nan),
             'Index_Bias': candidate.get('Index_Bias', Config_Helper.get_index_bias(candidate.get('Index'), candidate['Tail'])),
@@ -4582,7 +4539,7 @@ async def save_portfolio_with_analytics(portfolio_df, options_portfolio_df, file
             # Position details
             'Quantity1', 'Quantity2', 'W1', 'W2', 'Position_Multiplier',
             # Prices at initiation
-            'Co1 at Initiation', 'Co2 at Initiation', 'Index at Initiation', 'Treasury at Initiation',
+            'Co1 at Initiation', 'Co2 at Initiation', 'Index at Initiation',
             # Trade values
             'Trade Value Co1 ($)', 'Trade Value Co2 ($)', 'Total_Notional',
             # Sum deviation

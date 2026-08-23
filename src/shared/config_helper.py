@@ -602,11 +602,6 @@ def print_config_summary():
     print(f"  Earnings exit: {config.earnings_lookback_days()} days before")
     print(f"  SES (model exits): {'DISABLED' if config.disable_model_based_terminations() else 'ENABLED'}")
 
-    print(f"\nMarket Data:")
-    print(f"  Treasury: DGS10 (10-year yield)")
-    print(f"  Cache duration: {config.dgs10_cache_duration()}s")
-    print(f"  Default yield: {config.dgs10_default_yield()}%")
-
     print(f"\nPre-Filter Leniency:")
     prefilter = config.prefilter_leniency()
     print(f"  CDF adjustment: +/-{prefilter['cdf_adjustment']:.2f}")

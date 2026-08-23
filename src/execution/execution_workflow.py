@@ -474,7 +474,7 @@ async def run_portfolio_workflow():
         save_completed_trades,
     )
     from src.execution.reconciliation import reconcile_with_tws, execute_remedies, format_reconciliation_summary
-    from src.shared.fetch_market_data import fetch_live_prices_batch, get_today_dgs10_close
+    from src.shared.fetch_market_data import fetch_live_prices_batch
     from src.execution.daily_data_capture import load_closing_prices
     from src.execution.trade_execution import execute_trades_in_batches, execute_trades_with_aggregation
     from src.execution.stop_loss_protection import (
@@ -496,7 +496,6 @@ async def run_portfolio_workflow():
     yesterday_closes = {}
     evaluated_trades_df = pd.DataFrame()
     terminated_df = pd.DataFrame()
-    dgs10_price = None
     index_price = None
     completed_trades_path = None
 
@@ -506,7 +505,6 @@ async def run_portfolio_workflow():
     print("\nKey Features:")
     print("  ✓ Dynamic beta using CDF weights (W1)")
     print("  ✓ Tool box integration")
-    print("  ✓ DGS10 treasury yields (not FVX)")
     print("  ✓ Sum Deviation CDF-based sizing")
     print("  ✓ SES removed from terminations")
     print("  ✓ Async batch market data fetching")
@@ -700,13 +698,11 @@ async def run_portfolio_workflow():
                         except Exception as e:
                             logger.warning(f"Could not fetch yesterday's close for {ticker}: {e}")
 
-            # Get DGS10 and VO prices
-            dgs10_price = get_today_dgs10_close()
+            # Get VO price
             index_price = live_prices.get('VO', {}).get('live_price')
 
             logger.info(f"✓ Fetched {len(live_prices)} prices")
             logger.info(f"  VO: ${index_price:.2f}" if index_price else "  VO: MISSING")
-            logger.info(f"  DGS10: {dgs10_price:.2f}%" if dgs10_price else "  DGS10: MISSING")
 
             # Create simple_prices format
             simple_prices = {}
@@ -761,7 +757,6 @@ async def run_portfolio_workflow():
         else:
             logger.warning("No IBKR connection - using placeholder values")
             live_prices = {}
-            dgs10_price = 4.0
             index_price = config.VO_DEFAULT_PRICE
 
         workflow_stages['fetch_market_data'] = time.time() - stage_time
@@ -771,7 +766,6 @@ async def run_portfolio_workflow():
         import traceback
         traceback.print_exc()
         live_prices = {}
-        dgs10_price = 4.0
         index_price = getattr(config, 'VO_DEFAULT_PRICE', 250)
 
     # ========================================================================
@@ -785,7 +779,6 @@ async def run_portfolio_workflow():
             portfolio_df = pm.update_live_alpha_returns(
                 portfolio_df, parameters_df,
                 live_prices=simple_prices,
-                current_dgs10=dgs10_price,
                 fallback_to_previous=True
             )
 
@@ -946,8 +939,7 @@ async def run_portfolio_workflow():
                     evaluated_trades_df = await pm.evaluate_trades(
                         shortlist_df, parameters_df, portfolio_df,
                         ib=ib, live_prices=simple_prices,
-                        index_prices=index_prices_current,
-                        dgs10_price=dgs10_price
+                        index_prices=index_prices_current
                     )
 
                     logger.info(f"✓ Evaluated trades: {len(evaluated_trades_df)} approved")
@@ -991,13 +983,13 @@ async def run_portfolio_workflow():
                         logger.info("Using ORDER AGGREGATION")
                         execution_summary = await execute_trades_with_aggregation(
                             evaluated_trades_df,
-                            ib, simple_prices, index_price, dgs10_price
+                            ib, simple_prices, index_price
                         )
                     else:
                         logger.info("Using STANDARD EXECUTION")
                         execution_summary = await execute_trades_in_batches(
                             evaluated_trades_df,
-                            ib, simple_prices, index_price, dgs10_price
+                            ib, simple_prices, index_price
                         )
 
                     # Record successful trades to portfolio

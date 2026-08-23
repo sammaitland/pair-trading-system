@@ -1,7 +1,7 @@
 """
 Market data fetching module with session-based caching. Provides batch
-fetching of live prices, historical daily bars, treasury yield data, and
-intraday volume data via IBKR and yfinance.
+fetching of live prices, historical daily bars, and intraday volume data
+via IBKR and yfinance.
 
 Session caches are date-stamped and automatically cleaned up on import.
 Old cache files from previous days are removed.
@@ -369,171 +369,6 @@ async def fetch_historical_data_for_ticker(ib, contract, ticker, timeout=10):
 
 
 # ==================================================
-# Treasury Data Functions (10-Year)
-# ==================================================
-
-async def get_live_dgs10_from_futures(ib):
-    """
-    Get live 10-year yield from ZN futures (10-Year T-Note) via IBKR.
-    Automatically selects the front month contract.
-
-    Returns:
-        float: 10-year yield as percentage (e.g., 4.25 for 4.25%)
-    """
-    try:
-        from ib_insync import Future
-        from datetime import datetime
-
-        # Create generic ZN contract to query available contracts
-        zn_generic = Future('ZN', exchange='CBOT')
-
-        # Get all available ZN contracts
-        contract_details = await ib.reqContractDetailsAsync(zn_generic)
-
-        if not contract_details:
-            print("   No ZN contracts found")
-            return None
-
-        # Filter to contracts that haven't expired yet
-        today = datetime.now().date()
-        active_contracts = []
-
-        for detail in contract_details:
-            contract = detail.contract
-            try:
-                exp_str = contract.lastTradeDateOrContractMonth
-                if len(exp_str) == 8:  # YYYYMMDD format
-                    exp_date = datetime.strptime(exp_str, '%Y%m%d').date()
-                elif len(exp_str) == 6:  # YYYYMM format
-                    exp_date = datetime.strptime(exp_str + '01', '%Y%m%d').date()
-                else:
-                    continue
-
-                # Only include contracts that expire in the future
-                if exp_date >= today:
-                    active_contracts.append((contract, exp_date))
-
-            except Exception:
-                continue
-
-        if not active_contracts:
-            print("   No active ZN contracts found")
-            return None
-
-        # Sort by expiration date and take the front month (nearest expiration)
-        active_contracts.sort(key=lambda x: x[1])
-        front_month_contract = active_contracts[0][0]
-        front_month_date = active_contracts[0][1]
-
-        print(f"   Selected ZN contract: {front_month_contract.localSymbol} (expires {front_month_date})")
-
-        # Qualify the specific contract
-        qualified = await ib.qualifyContractsAsync(front_month_contract)
-
-        if not qualified:
-            print("   Failed to qualify selected ZN contract")
-            return None
-
-        # Request market data
-        ticker = ib.reqMktData(qualified[0], '', False, False)
-        await asyncio.sleep(2)
-
-        # Get last price
-        last_price = ticker.last if ticker.last else ticker.close
-
-        ib.cancelMktData(qualified[0])
-
-        if not last_price or last_price <= 0:
-            print(f"   Invalid ZN price: {last_price}")
-            return None
-
-        # Convert ZN futures price to approximate yield
-        # ZN trades in points (e.g., 110.5 = 110.5% of par)
-        coupon_rate = 6.0
-        face_value = 100.0
-        approximate_yield = (coupon_rate * face_value) / last_price
-
-        print(f"   ZN {front_month_contract.localSymbol}: {last_price:.3f} -> Yield: {approximate_yield:.4f}%")
-        return approximate_yield
-
-    except Exception as e:
-        print(f"   Error fetching DGS10 from ZN futures: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
-
-
-async def get_dgs10_with_fallback(ib):
-    """
-    Get current DGS10 yield -- prefer yfinance intraday, use ZN only as fallback.
-
-    Returns:
-        float: Current 10-year yield as percentage
-    """
-    # Try yfinance intraday (most reliable during market hours)
-    try:
-        intraday = yf.download("^TNX", period="1d", interval="1m",
-                              progress=False, auto_adjust=True)
-
-        if not intraday.empty:
-            latest_value = float(intraday['Close'].iloc[-1])
-            timestamp = intraday.index[-1]
-            minutes_old = (datetime.now(pytz.UTC) - timestamp.tz_localize(pytz.UTC)).total_seconds() / 60
-
-            print(f"   DGS10 from ^TNX intraday: {latest_value:.4f}% ({minutes_old:.0f}min old)")
-            return latest_value
-    except Exception as e:
-        print(f"   ^TNX intraday failed: {e}")
-
-    # Try yfinance daily (for after-hours)
-    try:
-        tnx = yf.Ticker("^TNX")
-        today_data = tnx.history(period="1d", interval="1d")
-
-        if not today_data.empty:
-            daily_value = float(today_data['Close'].iloc[-1])
-            print(f"   DGS10 from ^TNX daily: {daily_value:.4f}% (day's close)")
-            return daily_value
-    except Exception as e:
-        print(f"   ^TNX daily failed: {e}")
-
-    # ZN futures (only if yfinance completely unavailable)
-    if ib and ib.isConnected():
-        print(f"   Attempting ZN futures as last resort...")
-        dgs10 = await get_live_dgs10_from_futures(ib)
-        if dgs10 is not None:
-            print(f"   Using ZN-derived yield: {dgs10:.4f}% (approximation)")
-            return dgs10
-
-    print("   All methods failed to get DGS10")
-    return None
-
-
-def get_today_dgs10_close():
-    """
-    Synchronous DGS10 fetcher using yfinance only.
-    For historical data fetching where async is not needed.
-    """
-    try:
-        tnx = yf.Ticker("^TNX")
-
-        # Try intraday
-        intraday = yf.download("^TNX", period="1d", interval="1m", progress=False, auto_adjust=True)
-        if not intraday.empty:
-            return float(intraday['Close'].iloc[0])
-
-        # Fall back to daily
-        today_data = tnx.history(period="1d", interval="1d")
-        if not today_data.empty:
-            return float(today_data['Close'].iloc[-1])
-
-        return None
-    except Exception as e:
-        print(f"Error fetching DGS10: {e}")
-        return None
-
-
-# ==================================================
 # Volume Data Functions (session caching for performance)
 # ==================================================
 
@@ -730,21 +565,6 @@ async def fetch_live_prices_batch(ib, tickers, batch_size=50):
 
     live_prices = {}
 
-    # Handle DGS10 separately - use IBKR ZN futures with fallback
-    if 'DGS10' in tickers:
-        dgs10_price = await get_dgs10_with_fallback(ib)
-        if dgs10_price:
-            live_prices['DGS10'] = {
-                'live_price': dgs10_price,
-                'bid': None,
-                'ask': None,
-                'spread': None
-            }
-        else:
-            print("   WARNING: Could not fetch DGS10 data")
-
-        tickers = [t for t in tickers if t != 'DGS10']
-
     # Qualify contracts
     await qualify_contracts_batch(ib, tickers)
 
@@ -808,12 +628,6 @@ async def fetch_live_prices_batch_v2(ib, tickers, timeout=30):
 
     start_time = time.time()
 
-    # Handle DGS10 separately
-    dgs10_task = None
-    if 'DGS10' in tickers:
-        dgs10_task = get_dgs10_with_fallback(ib)
-        tickers = [t for t in tickers if t != 'DGS10']
-
     # Qualify all contracts in parallel (using existing cache)
     await qualify_contracts_batch(ib, tickers)
 
@@ -860,17 +674,6 @@ async def fetch_live_prices_batch_v2(ib, tickers, timeout=30):
                 'ask': ask,
                 'spread': spread
             }
-
-        # Add DGS10 if needed
-        if dgs10_task:
-            dgs10_price = await dgs10_task
-            if dgs10_price:
-                live_prices['DGS10'] = {
-                    'live_price': dgs10_price,
-                    'bid': None,
-                    'ask': None,
-                    'spread': None
-                }
 
         # Report results
         valid_prices = sum(1 for v in live_prices.values()
@@ -989,8 +792,8 @@ async def fetch_all_data(tickers, ib, treasury_earliest, treasury_latest,
     Args:
         tickers: List of stock tickers to fetch
         ib: IB connection
-        treasury_earliest: Start date for treasury data
-        treasury_latest: End date for treasury data
+        treasury_earliest: Start date for historical data range
+        treasury_latest: End date for historical data range
         index_tickers: List of index ETF tickers (e.g., ['VGT', 'VIS', 'VCR', 'VHT', 'VFH'])
         timeout: Request timeout
         force_refresh: If True, ignores session cache and fetches fresh data
@@ -1020,36 +823,11 @@ async def fetch_all_data(tickers, ib, treasury_earliest, treasury_latest,
 
     try:
         # Separate special tickers from regular stocks
-        special_tickers = set(['DGS10'] + index_tickers)
+        special_tickers = set(index_tickers)
         stock_tickers = [t for t in tickers if t not in special_tickers]
 
         # Qualify stock contracts
         await qualify_contracts_batch(ib, stock_tickers)
-
-        # Fetch DGS10 (treasury data) - always fresh
-        if "DGS10" in tickers:
-            # Calculate days needed
-            days_needed = (treasury_latest - treasury_earliest).days + 10
-            dgs10_data = await get_dgs10_historical_with_fallback(ib, days=days_needed)
-
-            if dgs10_data is not None and not dgs10_data.empty:
-                live_price = dgs10_data['close'].iloc[-1]
-                all_market_data["DGS10"] = {
-                    'historical_data': dgs10_data,
-                    'live_price': live_price,
-                    'bid': None,
-                    'ask': None,
-                    'spread': None
-                }
-            else:
-                print("   CRITICAL: Failed to fetch DGS10 data")
-                all_market_data["DGS10"] = {
-                    'historical_data': pd.DataFrame(),
-                    'live_price': None,
-                    'bid': None,
-                    'ask': None,
-                    'spread': None
-                }
 
         # Fetch all index ETFs that are in the ticker list
         for index_ticker in index_tickers:
@@ -1108,7 +886,7 @@ def _verify_data_freshness(market_data):
     """Verify that fetched data is current (not old cached data)."""
     today = datetime.now().date()
 
-    for ticker in ['VGT', 'DGS10']:
+    for ticker in ['VGT']:
         if ticker in market_data:
             hist = market_data[ticker].get('historical_data')
             if hist is not None and not hist.empty:
@@ -1121,90 +899,3 @@ def _verify_data_freshness(market_data):
                     print(f"   {ticker} data is current (last: {last_date})")
 
 
-async def get_dgs10_historical_with_fallback(ib, days=365):
-    """
-    Get DGS10 historical data -- prioritize yfinance for consistency.
-
-    Strategy:
-    1. Use yfinance ^TNX for historical (reliable, no conversion needed)
-    2. Update most recent value with ^TNX intraday (live market data)
-    3. Only use ZN if ^TNX completely fails (rare)
-    """
-    print(f"Fetching {days} days of historical DGS10...")
-
-    try:
-        # Get historical data from yfinance ^TNX
-        tnx = yf.Ticker("^TNX")
-
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=days+10)  # Extra buffer
-
-        hist_data = tnx.history(
-            start=start_date.strftime("%Y-%m-%d"),
-            end=end_date.strftime("%Y-%m-%d"),
-            interval="1d"
-        )
-
-        if hist_data.empty:
-            raise ValueError("No historical data from yfinance")
-
-        # Format as expected
-        hist_data.index = pd.to_datetime(hist_data.index, utc=True)
-        dgs10_df = hist_data[['Close']].rename(columns={'Close': 'close'})
-        dgs10_df = dgs10_df.sort_index()
-
-        print(f"  Fetched {len(dgs10_df)} days from yfinance ^TNX")
-        print(f"    Date range: {dgs10_df.index[0].date()} to {dgs10_df.index[-1].date()}")
-        print(f"    Last close: {dgs10_df['close'].iloc[-1]:.4f}%")
-
-        # Update most recent value with intraday data
-        try:
-            intraday = yf.download("^TNX", period="1d", interval="1m",
-                                  progress=False, auto_adjust=True)
-
-            if not intraday.empty:
-                latest_value = float(intraday['Close'].iloc[-1])
-                today_utc = pd.Timestamp.now(tz='UTC').normalize()
-
-                # Replace or append today's value with live intraday
-                if today_utc in dgs10_df.index:
-                    dgs10_df.loc[today_utc, 'close'] = latest_value
-                    print(f"  Updated today's value with intraday: {latest_value:.4f}%")
-                else:
-                    new_row = pd.DataFrame({'close': [latest_value]}, index=[today_utc])
-                    dgs10_df = pd.concat([dgs10_df, new_row])
-                    print(f"  Appended today's intraday value: {latest_value:.4f}%")
-
-                # Calculate change from previous day
-                prev_close = dgs10_df['close'].iloc[-2]
-                change = latest_value - prev_close
-                print(f"    Change from previous close: {change:+.4f}% ({change/prev_close*100:+.2f}%)")
-            else:
-                print(f"  No intraday data available, using last close")
-
-        except Exception as e:
-            print(f"  Intraday update failed: {e}, using last close")
-
-        return dgs10_df
-
-    except Exception as e:
-        print(f"  yfinance failed: {e}")
-
-        # FALLBACK: Use ZN futures (only if yfinance completely fails)
-        print("  Attempting ZN futures fallback...")
-        dgs10_current = await get_dgs10_with_fallback(ib)
-
-        if dgs10_current:
-            print(f"  WARNING: Using flat ZN-derived yield: {dgs10_current:.4f}%")
-            print(f"  This is NOT ideal - no historical variation!")
-
-            # Create flat historical data as last resort
-            dgs10_dates = pd.date_range(end=datetime.now(pytz.UTC), periods=days, freq='D')
-            dgs10_df = pd.DataFrame({
-                'close': [dgs10_current] * days
-            }, index=dgs10_dates)
-
-            return dgs10_df
-
-        print("  All methods failed")
-        return None

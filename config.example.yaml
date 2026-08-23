@@ -314,8 +314,6 @@ market_data:
   default_timeout:                  # Per-request timeout in seconds (suggested: 10)
   historical_lookback_days:         # Days of historical data to fetch (suggested: 365)
   volume_lookback_days:             # Days of volume data for analysis (suggested: 30)
-  dgs10_default_yield:              # Fallback treasury yield in percent (float)
-  dgs10_cache_duration:             # Cache duration in seconds (suggested: 300)
 
 # =============================================================================
 # Megacap Adjustment

@@ -10,9 +10,9 @@ by Co1 relative R²), compute improvement vs unfiltered baseline across
 mean return, win rate, Sharpe-like ratio, and trades retained.
 
 Inputs (all on disk — no live market connection required):
-    - Pair cache files: ~/Desktop/V9/V9.3/cache/{INDEX}_pair_cache.pkl
-      (trade_triggers_df — full historical backtest universe, ~113K trades)
-    - SubSector Beta Analysis: ~/Desktop/V9/V9.3/{INDEX}/{INDEX}_SubSector_Beta_Analysis.xlsx
+    - Pair cache files: {VERSION_DIR}/cache/{INDEX}_pair_cache.pkl
+      (trade_triggers_df — full historical backtest universe)
+    - SubSector Beta Analysis: {VERSION_DIR}/{INDEX}/{INDEX}_SubSector_Beta_Analysis.xlsx
       (calibrated R², sub-sector indices, raw returns)
 
 Output:

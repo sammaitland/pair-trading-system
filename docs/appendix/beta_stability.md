@@ -57,8 +57,8 @@ the subsequent 15-day forward alpha return.
 
 | Source | Path | What it provides |
 |---|---|---|
-| Pair cache files | `~/Desktop/V9/V9.3/cache/{INDEX}_pair_cache.pkl` | Full historical backtest trade universe (~113K trades) |
-| SubSector Beta Summary | `~/Desktop/V9/V9.3/{INDEX}/{INDEX}_SubSector_Beta_Analysis.xlsx` | Calibrated R², cluster assignments |
+| Pair cache files | `{VERSION_DIR}/cache/{INDEX}_pair_cache.pkl` | Full historical backtest trade universe |
+| SubSector Beta Summary | `{VERSION_DIR}/{INDEX}/{INDEX}_SubSector_Beta_Analysis.xlsx` | Calibrated R², cluster assignments |
 | SubSector Indices | Same Excel, sheet `SubSector Indices` | Daily sub-sector index returns |
 | Raw Returns Series | Same Excel, sheet `Raw Returns Series` | Daily raw ticker returns |
 

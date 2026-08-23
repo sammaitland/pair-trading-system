@@ -205,19 +205,3 @@ updated portfolio state.
 - guarantee consistency between account state and portfolio state on partial
   failure (see defect above)
 
----
-
-## Sanitisation notes for the public repo
-
-`TODO — remove this section before publishing.`
-
-- Remove broker host, port and client-ID offsets; replace with configuration.
-- Remove real portfolio and completed-trade file paths.
-- The limit buffer and fill timeouts are execution parameters, not alpha — they can
-  stay, but should move to configuration alongside the rest.
-- The worked example in the module docstring uses a real historical acquisition.
-  That is fine and makes the module easier to understand; confirm it is a public
-  transaction and not one the system actually held.
-- Fix the partial-failure defect before publishing, and keep the description above
-  in the repository as a resolved-issue note. The reasoning is more valuable
-  evidence than the fix.

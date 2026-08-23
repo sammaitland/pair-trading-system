@@ -501,6 +501,13 @@ def volume_data_lookback_days():
     return get("market_data.volume_lookback_days", 30)
 
 # ---------------------------------------------------------------------------
+# API keys
+# ---------------------------------------------------------------------------
+
+def alpha_vantage_api_key():
+    return get("api_keys.alphavantage", "")
+
+# ---------------------------------------------------------------------------
 # Megacap adjustment
 # ---------------------------------------------------------------------------
 
@@ -621,11 +628,75 @@ def termination_order_offset_earnings():
 # Formatting
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Additional path accessors
+# ---------------------------------------------------------------------------
+
+def alpha_data_dir(version=None):
+    return get_alpha_data_dir(version)
+
+def beta_files_dir(version=None):
+    return get_beta_files_dir(version)
+
+def desktop_dir():
+    return get("paths.desktop_dir", os.path.join(os.path.expanduser("~"), "Desktop"))
+
+def log_file():
+    return get("logging.log_file", "v9_trading.log")
+
+def log_date_format():
+    return get("logging.date_format", "%Y-%m-%d %H:%M:%S")
+
+def analyst_archive_dir():
+    return os.path.join(implementation_dir(), "analyst_archive")
+
+def data_capture_host():
+    return get("ibkr.data_capture_host", ibkr_host())
+
+def data_capture_port():
+    return get("ibkr.data_capture_port", get("ibkr.live_port"))
+
+# ---------------------------------------------------------------------------
+# Additional parameter accessors
+# ---------------------------------------------------------------------------
+
+def version():
+    """Return numeric version string (e.g. '9.3') for display."""
+    v = active_version()
+    return v.replace("V", "") if v else ""
+
+def max_stock_price():
+    return get("sizing.max_stock_price", 10000.0)
+
+def prefilter_max_spread_decimal():
+    bps = get("spreads.prefilter_max_spread_bps")
+    return bps / 10000 if bps is not None else None
+
+def enable_force_termination():
+    return get("force_termination.enabled", False)
+
+def force_terminate_tags():
+    return get("force_termination.tags", [])
+
+def enable_per_run_ticker_limit():
+    return get("sizing.enable_per_run_ticker_limit", True)
+
+def testing_mode():
+    return get("testing_mode", False)
+
+def spread_tolerance():
+    return get("spreads.spread_tolerance", 0.001)
+
+# ---------------------------------------------------------------------------
+# Formatting
+# ---------------------------------------------------------------------------
+
 CURRENCY_FORMAT = "${:,.2f}"
 PERCENTAGE_FORMAT = "{:.2%}"
 BETA_FORMAT = "{:.4f}"
 PRICE_DECIMALS = 2
 BETA_DECIMALS = 4
+LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 # ---------------------------------------------------------------------------
 # Load configuration at import time

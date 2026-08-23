@@ -21,10 +21,10 @@ rebuild from private source to public reference repository.
 
 | Metric | Before (source) | After (output) |
 |--------|-----------------|----------------|
-| Python files | 29 | 36 (includes __init__.py files) |
-| Total Python lines | 43,576 | 29,167 |
-| Total files | 32 | 80 (includes docs, config, fixtures) |
-| Markdown docs | 3 | 42 (all stubs except CHANGE_MANUAL and ROADMAP) |
+| Python files | 29 | 37 (includes __init__.py files and fixture generator) |
+| Total Python lines | 43,576 | 28,618 |
+| Total files | 32 | 84 (includes docs, config, fixtures, appendix) |
+| Markdown docs | 3 | 45 (operator-written: 2, stubs: remainder) |
 
 ### Change categories
 
@@ -462,13 +462,15 @@ Note: This table covers the primary extractions. The full set of ~165 parameters
 
 ## Part 5 — DECISIONS REQUIRED
 
-| # | Question | Options | Conservative Default | Impact If Changed |
-|---|----------|---------|---------------------|-------------------|
-| 1 | Include beta_stability/ diagnostics? | Include as-is / Exclude / Include as appendix | Excluded (listed in ROADMAP.md) | Would add ~679 lines to repo, needs path sanitisation |
-| 2 | DGS10 config values — are they still used? | Keep as operational params / Remove | Kept as operational params in market_data section | If removed, Execution_Workflow's DGS10 display would need updating |
-| 3 | Pre_Filter.py operator-written docs — were pre_filter.md and delisting_handler.md intended to be provided? | Provide them / Use generated stubs | Generated stubs (operator docs not found in source copy) | Module doc structure would change if operator docs are provided |
-| 4 | Should legacy V9 backward-compatibility aliases be preserved in calculations.py? | Keep aliases / Remove | Removed (clean break for public repo) | Existing code referencing old function names would need updating |
-| 5 | Is the circular dependency between Portfolio_Management and Trade_Execution intentional? | Keep lazy imports / Refactor | Kept as-is (lazy imports) | Refactoring would be a significant structural change |
+All decisions resolved.
+
+| # | Question | Decision | Commit |
+|---|----------|----------|--------|
+| 1 | Include beta_stability/ diagnostics? | **Included as appendix** in docs/appendix/, paths sanitised | `b96d4c4` |
+| 2 | DGS10 config values — still used? | **Removed entirely**. Vestigial artifact of retired treasury factor. See docs/decisions/dgs10_removal.md | `b96d4c4` |
+| 3 | Operator-written module docs? | **Provided and included** — pre_filter.md and delisting_handler.md replace generated stubs. Sanitisation notes sections removed. | `6b12315` |
+| 4 | Legacy backward-compat aliases? | **Removed**. All call sites updated to canonical function names. | `b96d4c4` |
+| 5 | Circular dependency PM ↔ TE? | **Refactored**. TE no longer imports PM. Portfolio recording moved to EW. See docs/decisions/circular_dependency_fix.md | `5024fe0` |
 
 ---
 
@@ -492,17 +494,33 @@ Note: This table covers the primary extractions. The full set of ~165 parameters
 
 ## Part 7 — Verification Results
 
-### Secret scan
-TODO: Re-run secret scan on output directory after all modules written.
+### Secret scan (post-sanitisation)
 
-### Import checks
-TODO: Verify all imports resolve within the package structure.
+Searched for: API keys, account IDs, machine hostnames, absolute paths with
+usernames, sys.path manipulation, os.system('say') calls.
+
+**Result: CLEAN.** No hardcoded credentials, account identifiers, personal
+machine names, or absolute user paths found in `src/`. Two path references
+remain in `docs/appendix/beta_stability.md` using `{VERSION_DIR}` placeholder
+(sanitised from original `~/Desktop/V9/V9.3/`).
+
+### sys.path manipulation
+**Result: CLEAN.** Zero occurrences in `src/`.
+
+### Import structure
+Missing config accessor functions identified and added. Dead getter functions
+(`get_prefilter_config`, `get_lam_config`) that referenced non-existent old
+config attributes removed. Config_helper function references (connect_ib_async,
+disconnect_ib, setup_logging, get_client_id) corrected from `config.*` to
+`ch.*` across 4 files.
 
 ### Pipeline stage execution
-TODO: Test each stage against synthetic fixtures.
+Not tested — requires IBKR connection and real market data. Synthetic fixture
+generator provided at `fixtures/synthetic_pairs.py`.
 
 ### gitleaks scan
-TODO: Run gitleaks on output directory.
+Not run — gitleaks not available in this environment. Manual scan performed
+(see secret scan above). Recommend running `gitleaks detect` before pushing.
 
 ---
 

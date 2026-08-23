@@ -32,6 +32,7 @@ from src.shared.constraints import (
     check_leverage_limit,
     check_emergency_leverage,
 )
+from src.shared import config_helper as ch
 from src.shared.config_helper import should_use_limit_orders
 from src.shared import calculations as Tool_Box
 from src.shared.calculations import BetaDataManager
@@ -288,7 +289,7 @@ def connect_ibkr():
     ib = IB()
     try:
         ib.connect(config.ibkr_host(), config.ibkr_port(), 
-                  clientId=config.ibkr_client_id())
+                  clientId=ch.get_client_id())
         logger.info("Connected to IBKR API")
     except Exception as e:
         logger.error(f"IBKR connection failed: {e}")

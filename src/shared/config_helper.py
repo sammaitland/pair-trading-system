@@ -615,27 +615,6 @@ def print_config_summary():
 # CONFIG GETTER FUNCTIONS
 # ============================================================================
 
-def get_prefilter_config():
-    """Get prefilter configuration with leniency adjustments applied."""
-    prefilter = config.prefilter_leniency()
-    return {
-        'cdf_lower': config.alpha_sum_cdf_lower_threshold() + prefilter['cdf_adjustment'],
-        'cdf_upper': config.alpha_sum_cdf_upper_threshold() - prefilter['cdf_adjustment'],
-        'two_day_lower': config.two_day_lower_threshold() * (1 - prefilter['two_day_reduction']),
-        'two_day_upper': config.two_day_upper_threshold() * (1 - prefilter['two_day_reduction']),
-    }
-
-
-def get_lam_config():
-    """Get LAM (exact) configuration."""
-    return {
-        'cdf_lower': config.alpha_sum_cdf_lower_threshold(),
-        'cdf_upper': config.alpha_sum_cdf_upper_threshold(),
-        'two_day_lower': config.two_day_lower_threshold(),
-        'two_day_upper': config.two_day_upper_threshold(),
-    }
-
-
 def should_use_limit_orders():
     """
     Determine if limit orders should be used based on trading environment.

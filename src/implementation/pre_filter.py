@@ -18,6 +18,7 @@ from ib_insync import IB
 from datetime import datetime, timedelta, date
 
 from src.shared import config
+from src.shared import config_helper as ch
 
 from src.shared.calculations import (
     apply_primary_filters_with_leniency_v92,
@@ -1036,14 +1037,14 @@ async def run_prefilter(ib):
 async def main():
     """Connect to IBKR and run the pre-filter pipeline."""
 
-    ib, connected = await config.connect_ib_async()
+    ib, connected = await ch.connect_ib_async()
 
     if connected:
         try:
             results = await run_prefilter(ib)
             print(f"\n{(results['Active']==1).sum()} active pairs ready for LAM ({ACTIVE_VERSION})")
         finally:
-            config.disconnect_ib(ib)
+            ch.disconnect_ib(ib)
     else:
         print("Failed to connect to IBKR")
 

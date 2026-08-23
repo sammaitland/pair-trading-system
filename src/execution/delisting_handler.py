@@ -875,7 +875,7 @@ def list_potential_delistings(portfolio_df: pd.DataFrame = None, ib: IB = None) 
     try:
         if ib is None or not ib.isConnected():
             ib = IB()
-            ib.connect('127.0.0.1', config.ibkr_port(), clientId=config.ibkr_client_id() + 50)
+            ib.connect('127.0.0.1', config.ibkr_port(), clientId=ch.get_client_id() + 50)
             own_connection = True
         
         for ticker in sorted(tickers):

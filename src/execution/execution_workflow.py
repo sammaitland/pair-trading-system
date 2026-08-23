@@ -45,7 +45,7 @@ def initialize():
     Initialize the workflow module: reload modules, configure logging,
     set up IBKR error filters. Safe to call multiple times (idempotent).
     """
-    global _initialized, config, pm, trade_execution, tool_box
+    global _initialized, config, ch, pm, trade_execution, tool_box
 
     print("=" * 60)
     print("INITIALIZING WORKFLOW MODULE")
@@ -53,11 +53,13 @@ def initialize():
 
     # Import/re-import modules to get fresh references
     from src.shared import config as _config_module
+    from src.shared import config_helper as _ch
     from src.execution import portfolio_management as _pm
     from src.execution import trade_execution as _te
     from src.shared import calculations as _tb
 
     config = _config_module
+    ch = _ch
     pm = _pm
     trade_execution = _te
     tool_box = _tb
@@ -66,7 +68,7 @@ def initialize():
     nest_asyncio.apply()
 
     # Configure logging
-    config.setup_logging()
+    ch.setup_logging()
 
     # Prevent duplicate handlers from Jupyter re-runs
     for handler_logger_name in [None, 'ib_insync', 'ib_insync.wrapper']:
@@ -344,7 +346,7 @@ async def post_close_update(workflow_result):
     if not connected:
         print("⚠️  No active IB connection — attempting reconnect...")
         try:
-            ib, connected = await config.connect_ib_async(timeout=10, max_retries=3)
+            ib, connected = await ch.connect_ib_async(timeout=10, max_retries=3)
         except Exception as e:
             print(f"❌ Could not reconnect: {e}")
             connected = False
@@ -413,7 +415,7 @@ async def post_close_update(workflow_result):
     # 6. Disconnect IB (daily capture manages its own connection)
     if ib and ib.isConnected():
         print("\nDisconnecting IB (daily capture will reconnect)...")
-        config.disconnect_ib(ib)
+        ch.disconnect_ib(ib)
 
     # 7. Run daily data capture
     print("\n" + "=" * 80)
@@ -538,7 +540,7 @@ async def run_portfolio_workflow():
         stage_time = time.time()
         print_stage_header(1, "IBKR Connection")
 
-        ib, connected = await config.connect_ib_async(timeout=10, max_retries=3)
+        ib, connected = await ch.connect_ib_async(timeout=10, max_retries=3)
 
         if connected:
             logger.info(f"✓ Connected to IBKR - {time.time() - stage_time:.2f}s")
@@ -618,7 +620,7 @@ async def run_portfolio_workflow():
                 logger.info("Workflow aborted by user - duplicate tags must be resolved")
                 print("\n✓ Workflow safely aborted.")
                 if ib and ib.isConnected():
-                    config.disconnect_ib(ib)
+                    ch.disconnect_ib(ib)
                 return _build_result(False, locals())
             else:
                 logger.warning("⚠️  User OVERRIDE: Continuing despite duplicate tags")
@@ -632,7 +634,7 @@ async def run_portfolio_workflow():
         user_input = input("Continue anyway? (y/n): ")
         if user_input.lower() != 'y':
             if ib and ib.isConnected():
-                config.disconnect_ib(ib)
+                ch.disconnect_ib(ib)
             return _build_result(False, locals())
 
     # ========================================================================
@@ -1218,7 +1220,7 @@ async def run_portfolio_workflow():
     # post_close_update() or must be done manually if skipping post-close.
     print("\n✓ IB connection kept alive for post-close update")
     print("  Call: await post_close_update(result)")
-    print("  Or:   config.disconnect_ib(result['ib'])")
+    print("  Or:   ch.disconnect_ib(result['ib'])")
 
     print("\n" + "=" * 80)
     print("WORKFLOW COMPLETE")

@@ -21,7 +21,10 @@ from scipy import stats
 from scipy.optimize import brentq
 
 # IBKR
-from ib_insync import IB, Stock, MarketOrder, Option, LimitOrder
+try:
+    from ib_insync import IB, Stock, MarketOrder, Option, LimitOrder
+except ImportError:
+    IB = Stock = MarketOrder = Option = LimitOrder = None
 
 # Project imports
 from src.shared import config

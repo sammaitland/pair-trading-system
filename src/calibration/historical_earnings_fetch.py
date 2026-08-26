@@ -26,7 +26,7 @@ from src.shared import config
 # VERSION CONFIGURATION
 # =============================================================================
 
-VERSION = config.ACTIVE_VERSION
+VERSION = config.active_version()
 VERSION_DIR = config.get_version_dir(VERSION)
 
 # =============================================================================

@@ -6,7 +6,7 @@ Provides operational support on top of the config module: connecting to IBKR,
 validating configuration consistency, setting up logging, and printing
 configuration summaries.
 
-STATUS: live -- deployed TODO(sam): date
+STATUS: live
 """
 
 import os

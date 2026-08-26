@@ -33,7 +33,10 @@ warnings.filterwarnings('ignore')
 from src.shared import config
 from src.shared import config_helper as ch
 
-from ib_insync import IB, Stock, StopOrder, WshEventData
+try:
+    from ib_insync import IB, Stock, StopOrder, WshEventData
+except ImportError:
+    IB = Stock = StopOrder = WshEventData = None
 import json
 
 # Setup logging

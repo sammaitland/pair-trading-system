@@ -37,8 +37,8 @@ warnings.filterwarnings('ignore')
 # CONFIG-BASED DIRECTORY SETUP
 # =============================================================================
 
-VERSION_BASE_DIR = config.get_version_dir(config.ACTIVE_VERSION)
-print(f"Config VERSION: {config.ACTIVE_VERSION}")
+VERSION_BASE_DIR = config.get_version_dir(config.active_version())
+print(f"Config VERSION: {config.active_version()}")
 print(f"Working directory: {VERSION_BASE_DIR}")
 
 # =============================================================================

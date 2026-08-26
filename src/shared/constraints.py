@@ -10,7 +10,7 @@ Categories:
 - Ticker concentration checks
 - IGV beta exposure calculation
 
-STATUS: live -- deployed TODO(sam): date
+STATUS: live
 """
 
 from src.shared import config

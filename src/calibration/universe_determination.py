@@ -28,7 +28,7 @@ from src.shared import config
 # VERSION CONFIGURATION
 # =============================================================================
 
-VERSION = config.ACTIVE_VERSION
+VERSION = config.active_version()
 VERSION_DIR = config.get_version_dir(VERSION)
 
 # Configuration - Updated to include VOX for VGT with proper weight calculation
@@ -38,7 +38,8 @@ OUTPUT_PATH = (VERSION_DIR)
 OUTPUT_FILENAME = f'{VERSION}_All_Vanguard_ETF_Tickers.xlsx'
 
 # Create output directory if it doesn't exist
-os.makedirs(OUTPUT_PATH, exist_ok=True)
+if OUTPUT_PATH:
+    os.makedirs(OUTPUT_PATH, exist_ok=True)
 
 # VOX integration for VGT with proper weight recalculation
 VOX_INTEGRATION = {

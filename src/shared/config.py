@@ -1,7 +1,7 @@
 """
 Unified configuration for the V9 pairs trading system.
 
-STATUS: live — deployed TODO(sam): date
+STATUS: live
 
 This module is the single source of truth for all system-wide parameters.
 Pair-specific data (betas, hurdles, coefficients) lives in the parameters
@@ -664,6 +664,9 @@ def version():
     """Return numeric version string (e.g. '9.3') for display."""
     v = active_version()
     return v.replace("V", "") if v else ""
+
+def min_stock_price():
+    return get("sizing.min_stock_price", 1.0)
 
 def max_stock_price():
     return get("sizing.max_stock_price", 10000.0)

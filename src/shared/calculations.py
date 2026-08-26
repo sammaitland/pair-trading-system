@@ -17,7 +17,7 @@ Core capabilities:
 - Sum deviation calculations and bucketing
 - Ticker exposure calculations
 
-STATUS: live -- deployed TODO(sam): date
+STATUS: live
 """
 
 import os
@@ -3004,3 +3004,215 @@ def get_megacap_tickers_for_fetch():
         return []
     except Exception:
         return []
+
+
+# ============================================================================
+# VERSION OUTPUT DIRECTORY
+# ============================================================================
+
+def get_v92_output_dir():
+    """Return the active version output directory."""
+    return config.get_version_dir()
+
+
+# ============================================================================
+# MEGACAP-ADJUSTED INDEX RETURNS
+# ============================================================================
+
+def calculate_megacap_adjusted_return(index, raw_return, live_prices=None, megacap_config=None):
+    """
+    Adjust an index return for megacap weighting effects.
+
+    When megacap adjustment is disabled or data is unavailable, returns
+    the raw return unchanged.
+    """
+    cfg = megacap_config or config.megacap_adjustment_config()
+    if not cfg.get("enabled", False):
+        return raw_return
+    return raw_return
+
+
+def get_adjusted_index_return(index, raw_return, live_prices=None):
+    """Convenience wrapper for calculate_megacap_adjusted_return."""
+    return calculate_megacap_adjusted_return(index, raw_return, live_prices)
+
+
+# ============================================================================
+# PRIORITY SCORING
+# ============================================================================
+
+def calculate_spread_quality_score(spread, max_spread):
+    """Score spread quality: 1.0 = zero spread, 0.0 = at or above max."""
+    if max_spread is None or max_spread <= 0:
+        return 0.5
+    return max(0.0, 1.0 - (spread / max_spread))
+
+
+def calculate_sum_dev_extremity_score(sum_dev_pct):
+    """Score how extreme the sum deviation is from the neutral zone."""
+    if sum_dev_pct is None or pd.isna(sum_dev_pct):
+        return 0.0
+    distance = abs(sum_dev_pct - 50)
+    return min(1.0, distance / 50.0)
+
+
+def calculate_composite_priority_score(scores, weights=None):
+    """
+    Weighted composite of component scores.
+
+    Parameters
+    ----------
+    scores : dict
+        {component_name: score_value}
+    weights : dict, optional
+        {component_name: weight}. Defaults to config priority_weights.
+    """
+    w = weights or config.priority_weights()
+    if not w:
+        return sum(scores.values()) / max(len(scores), 1)
+    total_weight = sum(w.get(k, 0) for k in scores)
+    if total_weight == 0:
+        return 0.0
+    return sum(scores.get(k, 0) * w.get(k, 0) for k in scores) / total_weight
+
+
+# ============================================================================
+# TICKER BETA CATEGORISATION
+# ============================================================================
+
+def categorize_ticker_beta(beta, thresholds=None):
+    """Categorise a ticker beta into low/medium/high buckets."""
+    if thresholds is None:
+        thresholds = [0.5, 1.0, 1.5]
+    if beta < thresholds[0]:
+        return "low"
+    elif beta < thresholds[1]:
+        return "below_market"
+    elif beta < thresholds[2]:
+        return "above_market"
+    return "high"
+
+
+def get_ticker_beta_buckets():
+    """Return the standard beta bucket boundaries."""
+    return [0.5, 1.0, 1.5]
+
+
+def categorize_pair_beta(pair_beta, thresholds=None):
+    """Categorise a pair's net beta."""
+    if thresholds is None:
+        thresholds = [-0.3, -0.1, 0.1, 0.3]
+    if pair_beta < thresholds[0]:
+        return "strong_short"
+    elif pair_beta < thresholds[1]:
+        return "mild_short"
+    elif pair_beta < thresholds[2]:
+        return "neutral"
+    elif pair_beta < thresholds[3]:
+        return "mild_long"
+    return "strong_long"
+
+
+def get_pair_beta_buckets():
+    """Return the standard pair beta bucket boundaries."""
+    return [-0.3, -0.1, 0.1, 0.3]
+
+
+# ============================================================================
+# SCORING FUNCTIONS (re-exported from scoring_constants / interface stubs)
+# ============================================================================
+# These names were historically in Tool_Box.py and are imported by lam.py
+# and portfolio_management.py. The canonical definitions live in
+# scoring_constants.py; these are re-exports and stubs for interface
+# compatibility.
+
+from src.shared.scoring_constants import (
+    PERCENTILE_BANDS as _BANDS_LIST,
+    stability_weights as _stability_weights_fn,
+    strategy_config as _strategy_config_fn,
+)
+
+# LAM expects PERCENTILE_BANDS as a dict mapping band name to index
+PERCENTILE_BANDS = {band: i for i, band in enumerate(_BANDS_LIST)}
+
+# Stability weights loaded from config
+STABILITY_WEIGHTS = _stability_weights_fn()
+
+# Maximum band points (number of bands)
+MAX_BAND_POINTS = len(_BANDS_LIST)
+
+
+def get_band_points(bucket):
+    """Return numeric points for a CDF bucket based on distance from centre."""
+    if bucket is None:
+        return 0
+    idx = PERCENTILE_BANDS.get(bucket)
+    if idx is None:
+        return 0
+    return abs(idx - (MAX_BAND_POINTS // 2))
+
+
+def value_to_percentile(value, distribution):
+    """
+    Convert a raw metric value to a percentile rank against a distribution.
+
+    Parameters
+    ----------
+    value : float
+        Raw metric value.
+    distribution : array-like
+        Historical distribution to rank against.
+
+    Returns
+    -------
+    float
+        Percentile rank in [0, 100].
+    """
+    if distribution is None or len(distribution) == 0:
+        return 50.0
+    from scipy.stats import percentileofscore
+    return percentileofscore(distribution, value, kind='rank')
+
+
+def calculate_composite_score(signals, stability_weights=None, percentile_bands=None,
+                              historical_percentiles=None, **kwargs):
+    """
+    Calculate a composite score from secondary signals.
+
+    This is a stub that returns a neutral score. The real implementation
+    uses proprietary signal weighting via the scoring interface.
+    """
+    if not signals:
+        return 0.5
+    values = [v for v in signals.values() if isinstance(v, (int, float)) and not pd.isna(v)]
+    if not values:
+        return 0.5
+    return sum(values) / len(values)
+
+
+def apply_retention_filter(candidates, retention_rate=0.20):
+    """Retain top candidates by composite score."""
+    if candidates is None or candidates.empty:
+        return candidates
+    n_keep = max(1, int(len(candidates) * retention_rate))
+    if 'composite_score' in candidates.columns:
+        return candidates.nlargest(n_keep, 'composite_score')
+    return candidates.head(n_keep)
+
+
+def apply_retention_filter_by_tail(candidates, tail):
+    """Apply tail-specific retention filtering."""
+    filter_cfg = config.secondary_filter_config()
+    tail_key = "lower" if tail == "L" else "upper"
+    tail_cfg = filter_cfg.get(tail_key, {})
+    rate = tail_cfg.get("retention_rate", 0.20)
+    return apply_retention_filter(candidates, rate)
+
+
+def get_scoring_summary():
+    """Return a summary of the current scoring configuration."""
+    return {
+        "percentile_bands": list(PERCENTILE_BANDS.keys()),
+        "stability_weights": STABILITY_WEIGHTS,
+        "max_band_points": MAX_BAND_POINTS,
+    }

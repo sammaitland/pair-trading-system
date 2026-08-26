@@ -6,13 +6,16 @@ via IBKR and yfinance.
 Session caches are date-stamped and automatically cleaned up on import.
 Old cache files from previous days are removed.
 
-STATUS: live -- deployed TODO(sam): date
+STATUS: live
 """
 
 import asyncio
 import pandas as pd
 import numpy as np
-from ib_insync import IB, Stock, util
+try:
+    from ib_insync import IB, Stock, util
+except ImportError:
+    IB = Stock = util = None
 import time
 from datetime import datetime, timedelta
 import pytz
@@ -27,12 +30,16 @@ from src.shared import config
 # ==================================================
 
 _CACHE_DIR = config.cache_dir()
-os.makedirs(_CACHE_DIR, exist_ok=True)
+if _CACHE_DIR:
+    os.makedirs(_CACHE_DIR, exist_ok=True)
 
 # Generate session-specific cache filename with today's date
 _TODAY_STR = datetime.now().strftime('%Y%m%d')
-_HISTORICAL_CACHE_FILE = os.path.join(_CACHE_DIR, f'historical_data_cache_{_TODAY_STR}.pkl')
-_VOLUME_CACHE_FILE = os.path.join(_CACHE_DIR, f'volume_data_cache_{_TODAY_STR}.pkl')
+_HISTORICAL_CACHE_FILE = os.path.join(_CACHE_DIR, f'historical_data_cache_{_TODAY_STR}.pkl') if _CACHE_DIR else ''
+_VOLUME_CACHE_FILE = os.path.join(_CACHE_DIR, f'volume_data_cache_{_TODAY_STR}.pkl') if _CACHE_DIR else ''
+
+# Public alias for downstream consumers (lam.py)
+HISTORICAL_CACHE_FILE = _HISTORICAL_CACHE_FILE
 
 
 def cleanup_old_cache_files():

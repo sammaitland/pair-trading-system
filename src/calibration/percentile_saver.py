@@ -23,10 +23,10 @@ from src.shared import config
 
 def get_version_aware_paths():
     """
-    Determine correct directory paths based on config.ACTIVE_VERSION
+    Determine correct directory paths based on config.active_version()
     Returns tuple: (version, v9_root, working_dir, secondaries_cache_dir, combined_portfolio_dir)
     """
-    version = config.ACTIVE_VERSION
+    version = config.active_version()
 
     # Ensure it starts with 'V'
     if not version.startswith('V'):
@@ -34,7 +34,7 @@ def get_version_aware_paths():
     print(f"Config VERSION: {version}")
 
     v9_root = Path(config.get("paths.v9_root", ""))
-    working_dir = Path(config.get_version_dir(config.ACTIVE_VERSION))
+    working_dir = Path(config.get_version_dir(config.active_version()))
     print(f"Using {version} directory structure")
 
     # Secondaries cache is SHARED (version-independent)

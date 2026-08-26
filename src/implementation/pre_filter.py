@@ -14,7 +14,10 @@ import numpy as np
 from scipy.stats import norm
 import os
 import traceback
-from ib_insync import IB
+try:
+    from ib_insync import IB
+except ImportError:
+    IB = None
 from datetime import datetime, timedelta, date
 
 from src.shared import config

@@ -40,7 +40,7 @@ def get_version_info():
     Get version info from config.
     Returns tuple: (version, v9_root, working_dir)
     """
-    version = config.ACTIVE_VERSION
+    version = config.active_version()
     v9_root = config.get("paths.v9_root", "")
     working_dir = config.get_version_dir(version)
 

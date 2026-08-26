@@ -12,19 +12,18 @@ rebuild from private source to public reference repository.
 | Category | Count | Notes |
 |----------|-------|-------|
 | Included in full | 16 modules | Import fixes, docstring rewrites, parameter externalisation |
-| Included as interface + ref impl | 4 modules | Beta_Estimator, LAM, Optimizer, Portfolio_Management |
-| Excluded entirely | 6 modules | Pair_Generator, Factor_Shock_Detection, Tool_Box (signal internals), Scheduler_Template, LAM_Call, Daily_Updater_Call |
-| Excluded (operator decision pending) | 1 module | beta_stability/ diagnostics |
-| New files created | ~15 | Interfaces, ref impls, config loader, fixtures, scaffolding |
+| Included as interface + ref impl | 5 modules | Beta_Estimator, Pair_Generator, Optimizer, Signal_Scorer, Factor_Shock_Detection |
+| Excluded entirely | 4 modules | Scheduler_Template, LAM_Call, Daily_Updater_Call, beta_stability/ diagnostics |
+| New files created | ~20 | Interfaces, ref impls, config loader, fixtures, test suite, CI workflow |
 
 ### Total file and line counts
 
 | Metric | Before (source) | After (output) |
 |--------|-----------------|----------------|
-| Python files | 29 | 37 (includes __init__.py files and fixture generator) |
-| Total Python lines | 43,576 | 28,618 |
-| Total files | 32 | 84 (includes docs, config, fixtures, appendix) |
-| Markdown docs | 3 | 45 (operator-written: 2, stubs: remainder) |
+| Python files | 29 | 45 (includes __init__.py files, fixture generator, test suite) |
+| Total Python lines | 43,576 | ~30,000 |
+| Total files | 32 | ~60 (includes config, fixtures, tests, CI, appendix) |
+| Markdown docs | 3 | 4 (README, ARCHITECTURE, CHANGE_MANUAL, ROADMAP) |
 
 ### Change categories
 
@@ -46,7 +45,7 @@ rebuild from private source to public reference repository.
 | Hardcoded exclusion lists → config | 2 (crypto tickers, mREIT tickers) |
 | Module split | 1 (Tool_Box → calculations.py + scoring_constants.py + signal interfaces) |
 | Bug fix | 1 (Delisting_Handler partial-failure — isolated commit, see Part 2) |
-| New interface + ref impl | 4 (signal scorer, factor shock detector, beta estimator, optimizer) |
+| New interface + ref impl | 5 (signal scorer, factor shock detector, beta estimator, pair generator, optimizer) |
 | Pair cache schema + fixture | 1 (synthetic_pairs.py + pair_cache_schema.md) |
 
 ---
@@ -393,9 +392,12 @@ All NEW files:
 - `src/signals/reference_factor_shock.py` — no-op detector (reference only)
 - `src/calibration/beta_estimator_interface.py` — abstract beta estimator interface
 - `src/calibration/reference_beta_estimator.py` — simple OLS estimator (reference only)
+- `src/calibration/pair_generator_interface.py` — abstract pair generator interface
+- `src/calibration/reference_pair_generator.py` — synthetic pair generator (reference only)
 - `src/calibration/optimizer_interface.py` — abstract optimizer interface
+- `src/calibration/reference_optimizer.py` — pass-through optimizer consuming shared scoring_constants and constraints (reference only)
 
-Each reference implementation is marked `STATUS: reference implementation — not deployed` and is deliberately simplistic.
+Each reference implementation is marked `STATUS: reference implementation — not deployed` and is deliberately simplistic. The reference optimizer explicitly imports `scoring_constants` and `constraints` from the shared layer to demonstrate the calibration/live parity invariant.
 
 ---
 
@@ -403,13 +405,13 @@ Each reference implementation is marked `STATUS: reference implementation — no
 
 | Source File | Reason | Replacement | ROADMAP Reference |
 |-------------|--------|-------------|-------------------|
-| Calibration/Pair_Generator.py | Pair selection filters are out of scope | Schema (fixtures/pair_cache_schema.md) + synthetic fixture (fixtures/synthetic_pairs.py) | ROADMAP.md — Pair_Generator |
-| Helper/Factor_Shock_Detection.py | Excluded, but Pre_Filter calls it inside try/except | Interface (factor_shock_interface.py) + no-op ref impl (reference_factor_shock.py) | ROADMAP.md — Factor_Shock_Detection |
+| Calibration/Pair_Generator.py | Pair selection filters are proprietary | Interface (pair_generator_interface.py) + reference impl (reference_pair_generator.py) + synthetic fixture (fixtures/synthetic_pairs.py) | ROADMAP.md — Pair_Generator |
+| Helper/Factor_Shock_Detection.py | Factor shock model is proprietary | Interface (factor_shock_interface.py) + no-op ref impl (reference_factor_shock.py) | ROADMAP.md — Factor_Shock_Detection |
 | Helper/Tool_Box.py (signal internals) | Scoring internals are proprietary | Signal interface (scoring_interface.py) + naive ref impl (reference_scorer.py) | ROADMAP.md — Tool_Box |
 | Executive/Scheduler_Template.py | Incomplete — all code commented out | None | ROADMAP.md — Scheduler_Template |
 | Executive/LAM_Call.py | Notebook entry point, superseded | None | ROADMAP.md — LAM_Call |
 | Executive/Daily_Updater_Call.py | Notebook entry point, superseded | None | ROADMAP.md — Daily_Updater_Call |
-| Diagnostics/beta_stability/ | Flagged for operator decision | None | ROADMAP.md — beta_stability |
+| Diagnostics/beta_stability/ | Analysis complete, pending integration | Appendix in docs/appendix/ | ROADMAP.md — beta_stability |
 
 ---
 

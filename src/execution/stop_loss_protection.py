@@ -17,7 +17,10 @@ import pandas as pd
 import numpy as np
 
 from src.shared import config
-from ib_insync import Stock, StopOrder, MarketOrder
+try:
+    from ib_insync import Stock, StopOrder, MarketOrder
+except ImportError:
+    Stock = StopOrder = MarketOrder = None
 
 logger = logging.getLogger(__name__)
 

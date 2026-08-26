@@ -26,7 +26,7 @@ def get_version_paths():
     Get version-aware paths from config.
     Returns tuple: (version, base_dir, implementation_dir)
     """
-    version = config.ACTIVE_VERSION
+    version = config.active_version()
 
     # Ensure version string format (e.g., "9.3" -> "V9.3")
     if not version.startswith('V'):
@@ -34,7 +34,7 @@ def get_version_paths():
     else:
         version_str = version
 
-    base_dir = Path(config.get_version_dir(config.ACTIVE_VERSION))
+    base_dir = Path(config.get_version_dir(config.active_version()))
     implementation_dir = base_dir / "Implementation"
 
     print(f"Using ACTIVE_VERSION: {version_str}")
@@ -47,7 +47,7 @@ def get_version_paths():
 def extract_parameters():
     """
     Extract parameters from beta analysis and pair trading outputs.
-    Version-aware: reads from config.ACTIVE_VERSION
+    Version-aware: reads from config.active_version()
     """
 
     # Get version-aware paths
@@ -353,7 +353,7 @@ def extract_parameters():
             ['Base Directory', str(base_dir)],
             ['Implementation Directory', str(implementation_dir)],
             ['Generated At', pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')],
-            ['Config Source', 'config.ACTIVE_VERSION'],
+            ['Config Source', 'config.active_version()'],
         ], columns=['Parameter', 'Value'])
         version_info.to_excel(writer, sheet_name='Version_Info', index=False)
 

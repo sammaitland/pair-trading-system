@@ -1,7 +1,7 @@
 """
 Canonical scoring constants consumed by both calibration and live pipelines.
 
-STATUS: live — deployed TODO(sam): date
+STATUS: live
 
 This module exists to enforce a single invariant: the constants that the
 calibration pipeline uses to define "permissible" must be identical to the

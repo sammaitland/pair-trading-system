@@ -20,7 +20,10 @@ from scipy.stats import norm
 import os
 import traceback
 import pickle
-from ib_insync import IB
+try:
+    from ib_insync import IB
+except ImportError:
+    IB = None
 from src.shared.fetch_market_data import (
     fetch_live_prices_batch,
     fetch_all_data,
@@ -74,7 +77,7 @@ VERSION_DIR = config.get_version_dir(ACTIVE_VERSION)
 PARAMETERS_FILE = config.get_parameters_file(ACTIVE_VERSION)
 
 # Shared secondaries cache (version-independent)
-SECONDARIES_CACHE_DIR = os.path.join(config.v9_base_dir(), "Master Implementation", "secondaries_cache")
+SECONDARIES_CACHE_DIR = os.path.join(config._base_dir(), "Master Implementation", "secondaries_cache")
 
 def diagnose_sum_dev_distribution(df, stage_name, sum_dev_col='Sum_Deviation',
                                   cdf_col='Sum_Dev_Percentile', bucket_col='Sum_Dev_Bucket'):

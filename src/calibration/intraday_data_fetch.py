@@ -10,7 +10,10 @@ STATUS: live
 """
 
 import pandas as pd
-from ib_insync import *
+try:
+    from ib_insync import *
+except ImportError:
+    pass
 import time
 import os
 import logging
@@ -37,8 +40,8 @@ from src.shared import config
 # CONFIG-BASED DIRECTORY SETUP
 # =============================================================================
 
-VERSION_BASE_DIR = config.get_version_dir(config.ACTIVE_VERSION)
-print(f"Config VERSION: {config.ACTIVE_VERSION}")
+VERSION_BASE_DIR = config.get_version_dir(config.active_version())
+print(f"Config VERSION: {config.active_version()}")
 print(f"Working directory: {VERSION_BASE_DIR}")
 
 TWS_PORT = config.get("ibkr.port", 7497)
@@ -61,7 +64,8 @@ logger = logging.getLogger(__name__)
 SECONDARIES_CACHE_DIR = config.get("paths.secondaries_cache_dir", "")
 
 # Ensure directory exists
-os.makedirs(SECONDARIES_CACHE_DIR, exist_ok=True)
+if SECONDARIES_CACHE_DIR:
+    os.makedirs(SECONDARIES_CACHE_DIR, exist_ok=True)
 print(f"Secondaries cache: {SECONDARIES_CACHE_DIR}")
 
 class EnhancedHourlyDataRetrieval:

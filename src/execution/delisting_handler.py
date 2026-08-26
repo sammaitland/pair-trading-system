@@ -21,7 +21,10 @@ import numpy as np
 from src.shared import config
 
 from src.shared import config_helper as ch
-from ib_insync import IB, Stock, MarketOrder, LimitOrder
+try:
+    from ib_insync import IB, Stock, MarketOrder, LimitOrder
+except ImportError:
+    IB = Stock = MarketOrder = LimitOrder = None
 
 logger = logging.getLogger(__name__)
 

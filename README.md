@@ -1,5 +1,7 @@
 # Pairs Trading System — Architecture Reconstruction
 
+[![Tests](https://github.com/sammaitland/pair-trading-system/actions/workflows/tests.yml/badge.svg)](https://github.com/sammaitland/pair-trading-system/actions/workflows/tests.yml)
+
 This is a systematic equity pairs trading system, trading US equities drawn from five Vanguard sector ETFs (VGT, VFH, VIS, VHT, VCR) via Interactive Brokers. The core idea: within a given sector, two stocks that normally move together will occasionally diverge. The system detects these divergences, enters a long/short pair trade, and profits when the relationship reverts.
 
 Comprises two distinct, but interdependent, workflows:

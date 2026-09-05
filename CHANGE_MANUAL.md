@@ -55,7 +55,7 @@ rebuild from private source to public reference repository.
 ### src/shared/config.py
 **Source:** Executive/Config.py
 **Status:** included (structure only — all values externalised)
-**Line count:** 1,161 → TODO
+**Line count:** 1,161 → 708
 
 **Changes:**
 | # | Type | Location | Change | Reason |
@@ -88,7 +88,7 @@ rebuild from private source to public reference repository.
 ### src/shared/config_helper.py
 **Source:** Helper/Config_Helper.py
 **Status:** included in full
-**Line count:** 727 → TODO
+**Line count:** 727 → 657
 
 **Changes:**
 | # | Type | Location | Change | Reason |
@@ -107,7 +107,7 @@ rebuild from private source to public reference repository.
 ### src/shared/constraints.py
 **Source:** Helper/Constraints.py
 **Status:** included in full
-**Line count:** 423 → TODO
+**Line count:** 423 → 425
 
 **Changes:**
 | # | Type | Location | Change | Reason |
@@ -124,7 +124,7 @@ rebuild from private source to public reference repository.
 ### src/shared/fetch_market_data.py
 **Source:** Helper/Fetch_Market_Data_V9.py
 **Status:** included in full
-**Line count:** 1,248 → TODO
+**Line count:** 1,248 → 908
 
 **Changes:**
 | # | Type | Location | Change | Reason |
@@ -180,7 +180,7 @@ This module is the single-source-of-truth bridge between calibration and live pi
 ### src/execution/delisting_handler.py
 **Source:** Helper/Delisting_Handler.py
 **Status:** included in full
-**Line count:** 992 → TODO
+**Line count:** 992 → 1,022
 
 **Changes:**
 | # | Type | Location | Change | Reason |
@@ -205,7 +205,7 @@ AFTER: Record and remove per trade, conditional on that trade's counterpart clos
 ### src/execution/execution_workflow.py
 **Source:** Executive/Execution_Workflow.py
 **Status:** included in full
-**Line count:** 1,295 → TODO
+**Line count:** 1,295 → 1,277
 
 **Changes:**
 | # | Type | Location | Change | Reason |
@@ -224,7 +224,7 @@ AFTER: Record and remove per trade, conditional on that trade's counterpart clos
 ### src/execution/trade_execution.py
 **Source:** Helper/Trade_Execution.py
 **Status:** included in full
-**Line count:** 2,848 → TODO
+**Line count:** 2,848 → 2,733
 
 **Changes:**
 | # | Type | Location | Change | Reason |
@@ -241,7 +241,7 @@ AFTER: Record and remove per trade, conditional on that trade's counterpart clos
 ### src/execution/portfolio_management.py
 **Source:** Helper/Portfolio_Management.py
 **Status:** included (constraint enforcement and greedy selection in full; position sizing behind interface)
-**Line count:** 5,559 → TODO
+**Line count:** 5,559 → 5,519
 
 **Changes:**
 | # | Type | Location | Change | Reason |
@@ -258,7 +258,7 @@ AFTER: Record and remove per trade, conditional on that trade's counterpart clos
 ### src/execution/reconciliation.py
 **Source:** Helper/Reconciliation.py
 **Status:** included in full
-**Line count:** 495 → TODO
+**Line count:** 495 → 493
 
 **Changes:**
 | # | Type | Location | Change | Reason |
@@ -275,7 +275,7 @@ AFTER: Record and remove per trade, conditional on that trade's counterpart clos
 ### src/execution/stop_loss_protection.py
 **Source:** Helper/Stop_Loss_Protection.py
 **Status:** included in full
-**Line count:** 712 → TODO
+**Line count:** 712 → 707
 
 **Changes:**
 | # | Type | Location | Change | Reason |
@@ -293,7 +293,7 @@ AFTER: Record and remove per trade, conditional on that trade's counterpart clos
 ### src/execution/daily_data_capture.py
 **Source:** Helper/Daily_Data_Capture.py
 **Status:** included in full
-**Line count:** 2,428 → TODO
+**Line count:** 2,428 → 2,405
 
 **Changes:**
 | # | Type | Location | Change | Reason |
@@ -311,7 +311,7 @@ AFTER: Record and remove per trade, conditional on that trade's counterpart clos
 ### src/implementation/pre_filter.py
 **Source:** Implementation/Pre_Filter.py
 **Status:** included in full
-**Line count:** 1,127 → TODO
+**Line count:** 1,127 → 1,057
 
 **Changes:**
 | # | Type | Location | Change | Reason |
@@ -335,7 +335,7 @@ AFTER: Record and remove per trade, conditional on that trade's counterpart clos
 ### src/implementation/lam.py
 **Source:** Implementation/LAM.py
 **Status:** included (pipeline stage and contracts in full; scoring internals from shared toolbox)
-**Line count:** 2,124 → TODO
+**Line count:** 2,124 → 2,085
 
 **Changes:**
 | # | Type | Location | Change | Reason |
@@ -353,7 +353,7 @@ AFTER: Record and remove per trade, conditional on that trade's counterpart clos
 ### src/calibration/universe_determination.py
 **Source:** Calibration/Universe_Determination.py
 **Status:** included in full
-**Line count:** 1,131 → TODO
+**Line count:** 1,131 → 1,126
 
 **Changes:**
 | # | Type | Location | Change | Reason |

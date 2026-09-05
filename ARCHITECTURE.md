@@ -52,7 +52,7 @@ sequenceDiagram
 
     Impl->>Params: Load calibrated state
     Impl->>Impl: 1. Pre-filter (primary exclusions)
-    Impl->>Impl: 2. LAM (scoring, Longlist → Shortlist)
+    Impl->>Impl: 2. LAM (scoring → Shortlist)
     Impl->>Impl: 3. Portfolio management (constraints)
     Impl->>Impl: 4. Trade execution
     Impl->>Impl: 5. Reconciliation vs broker state
@@ -104,17 +104,17 @@ The live workflow applies the calibrated state to the current market. Its respon
 
 Loads the calibrated state and current market data, applies the primary filters and exclusions, and produces the filtered candidate set that LAM consumes. Derived quantities that belong to this stage are calculated here rather than independently reconstructed downstream.
 
+Among the primary exclusions is a trending-stock filter, which removes individual equities exhibiting strong directional momentum over configurable lookback windows. A stock in a sustained trend undermines the mean-reversion assumption that underpins pair entry signals, so these candidates are excluded before scoring rather than penalised within it.
+
 ### LAM / scoring
 
 Receives the filtered candidates from pre-filter and acts as the principal candidate-evaluation stage between the broad filtered universe and portfolio-level decision making. It applies the calibrated state, current market observations, primary and secondary candidate-level signals, and the canonical scoring rules.
 
 Its principal stages are:
 
-1. Primary signal evaluation establishes the initial signal state for each candidate.
-2. The Longlist contains candidates that have passed the primary evaluation and remain eligible for further consideration.
-3. Secondary scoring applies the additional candidate-level evaluation and ranking logic.
-4. The Shortlist contains candidates that survive secondary evaluation and are ranked for portfolio consideration.
-5. The resulting candidate-level state is passed to portfolio management rather than directly to execution.
+1. Primary signal evaluation establishes the initial signal state for each candidate and produces the Shortlist — the ranked candidates forwarded for portfolio consideration.
+2. Secondary scoring applies additional candidate-level evaluation and produces the Longlist, a broader diagnostic export used for manual inspection rather than as a pipeline contract.
+3. The Shortlist is passed to portfolio management rather than directly to execution.
 
 LAM determines candidate attractiveness; portfolio management determines whether an attractive candidate is permissible. This keeps candidate-level signal evaluation separate from portfolio-level constraints and existing position context.
 
@@ -162,9 +162,9 @@ Represents the calibrated pair universe and the historical information required 
 
 Consolidates the calibrated thresholds, distributions, and other values required by the live implementation. This is the principal calibration-to-live handoff.
 
-### Longlist / Shortlist
+### Shortlist / Longlist
 
-Represents progressively enriched candidate state. Both are produced by LAM: the Longlist contains all candidates with primary signal state; the Shortlist contains candidates that have survived secondary scoring and ranking.
+Both are produced by LAM. The Shortlist contains ranked candidates forwarded for portfolio consideration — it is the primary pipeline output. The Longlist is a broader diagnostic export containing all candidates with their signal state, used for manual inspection rather than consumed downstream.
 
 ### Portfolio state
 

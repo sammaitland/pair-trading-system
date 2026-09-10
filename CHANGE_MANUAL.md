@@ -50,6 +50,34 @@ rebuild from private source to public reference repository.
 
 ---
 
+## V9.2C → V9.4C: known differences
+
+V9.4C is a structural refactor of V9.2C (notebooks → package). It has
+not been verified as output-equivalent: no golden-master comparison
+exists, and the test suite verifies the rebuild's own architecture
+rather than agreement with prior versions. Four differences are known.
+
+**Deliberate — intended settings, not refactor artefacts**
+
+1. Extreme-bucket leg weights: V9.2C 0.75/0.25, V9.4C 0.60/0.40.
+   The 75/25 split was an experimental value in the final live run.
+   60/40 is the intended setting.
+2. Strict spread cap: V9.2C 22 bps, V9.4C 24 bps. Same rationale —
+   22 bps was experimental; 24 bps is intended.
+3. IGV put hedge: active in V9.2C, removed in V9.4C. Retired during
+   live trading. The factor-exposure framework made it redundant,
+   and IGV was not the appropriate hedge instrument.
+
+**Open — under verification**
+
+4. Sum-deviation calculation: changed in V9.4C. The revised form
+   corrects what appears to be an error, but the original behaviour
+   may be load-bearing to the signal. To be settled by a parallel
+   dry-run of V9.4C against V9.2C paper output. Treated as an
+   unverified difference until then.
+
+---
+
 ## Part 2 — Per-File Record
 
 ### src/shared/config.py

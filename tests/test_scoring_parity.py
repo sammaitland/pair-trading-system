@@ -1,9 +1,11 @@
 """
-State parity checks.
+Calibration/live parity checks.
 
-Verify that calibration and implementation consume identical scoring
-definitions from the shared layer, preventing silent drift between
-research and execution code.
+Verify that calibration and implementation consume the same canonical
+scoring definitions, constraint functions, and shared constants from
+the shared layer. These tests guard against internal drift between
+calibration and live code within the reconstruction — they do not
+perform cross-version or end-to-end output comparison.
 """
 
 import pytest

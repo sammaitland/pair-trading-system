@@ -1,10 +1,10 @@
 """
-Golden-master regression tests for shared calculations.
+Deterministic regression tests for shared calculations.
 
-These tests verify that the core mathematical functions produce
-deterministic, numerically exact results. If a refactor changes the
+These tests verify that core mathematical functions produce expected
+results against hardcoded inputs and outputs. If a change alters the
 output of these functions, these tests fail — forcing explicit
-acknowledgement that the change alters system behaviour.
+acknowledgement before the change is accepted.
 """
 
 import numpy as np

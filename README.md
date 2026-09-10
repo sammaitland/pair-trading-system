@@ -21,7 +21,7 @@ Calibration and live execution share one definition of a good trade. Early on, t
 
 That class of bug is nearly invisible. Nothing errors, the backtest looks fine, and you end up slowly optimising for a strategy you aren't actually running.
 
-I traced the divergence between the calibration and implementation paths, extracted the duplicated scoring logic, and moved those definitions into shared infrastructure. Now, both calibration and live execution consume the exact same canonical scoring rules, constants, and constraint definitions. If I change what counts as a good trade, it is structurally impossible to update it in one environment and forget it in the other.
+I traced the divergence between the calibration and implementation paths, extracted the duplicated scoring logic, and moved those definitions into shared infrastructure. Now, both calibration and live execution consume the same canonical scoring rules, constants, and constraint definitions. A change to those shared definitions therefore propagates to both paths, removing the duplicated-definition failure mode that caused the original drift.
 
 **Finding and Removing Look-Ahead Bias**
 
@@ -51,7 +51,7 @@ I replaced static cost assumptions with dynamic, spread-based friction models an
 
 During the refactor, I encountered cumulative return calculations using arithmetic summing rather than standard geometric compounding. Textbook finance dictates geometric treatment, and the immediate temptation during a system cleanup is to "fix" what looks like an obvious oversight.
 
-Before changing it, I traced how the metric propagated downstream. I realised that the historical calibration thresholds, risk limits, and signal distributions were all explicitly tuned around the arithmetic definition. Standardising to geometric returns would have silently broken the system's calibrated mechanics. I preserved the arithmetic implementation, choosing behavioural continuity over theoretical elegance.
+Before changing it, I traced how the metric propagated downstream. I realised that the historical calibration thresholds, risk limits, and signal distributions were all explicitly tuned around the arithmetic definition. Standardising to geometric returns would have silently broken the system's calibrated mechanics. I preserved the arithmetic implementation, choosing behavioural continuity over theoretical elegance. (This is a design-decision rationale, not a claim of whole-system output equivalence between V9.2C and V9.4C — see CHANGE_MANUAL.md for known differences.)
 
 **Building and Refactoring with AI Assistance**
 
@@ -59,15 +59,15 @@ I used AI extensively during the reconstruction, but treated it as an implementa
 
 The difficult part wasn't generating individual functions; it was maintaining an accurate model of the existing system while making changes across a large number of interdependent modules. I used AI to navigate and summarise unfamiliar parts of the existing codebase, identify duplicated logic and potential dependency problems, propose refactoring approaches, generate and rework repetitive implementation, trace data and control flow across modules, and help construct tests and verification checks.
 
-Generated changes were treated as proposals, not as evidence that the implementation was correct. I had to determine whether the suggested interpretation of the existing behaviour was actually correct, whether a proposed "improvement" would change production behaviour, whether dependencies had been moved in the correct direction, whether a refactor preserved numerical outputs, and whether failure behaviour remained correct.
+Generated changes were treated as proposals, not as evidence that the implementation was correct. I had to determine whether the suggested interpretation of the existing behaviour was actually correct, whether a proposed "improvement" would change production behaviour, whether dependencies had been moved in the correct direction, and whether failure behaviour remained correct.
 
 This was particularly important because the system contained deliberately non-obvious behaviour: arithmetic rather than geometric returns, calibration/live differences, historical workarounds, edge-case handling, and dependencies whose importance wasn't obvious from the individual function implementing them.
 
 AI was therefore most useful as a way of increasing the amount of code and system reasoning I could inspect, rather than replacing the need to understand the system myself.
 
-I validated the resulting architecture through tests, numerical comparisons, import and dependency checks, synthetic fixtures, tracing behaviour back to the original implementation, and checking that changes preserved the intended invariants.
+I validated the resulting architecture through tests, import and dependency checks, synthetic fixtures, and tracing behaviour back to the original implementation.
 
-The important distinction is that AI generated or suggested implementation, but I owned the architectural decisions and the validation of those decisions. This allowed me to work effectively across a codebase substantially larger and more complex than I could comfortably hold in my head at once, while still treating correctness and behavioural preservation as my responsibility.
+The important distinction is that AI generated or suggested implementation, but I owned the architectural decisions and the validation of those decisions. This allowed me to work effectively across a codebase substantially larger and more complex than I could comfortably hold in my head at once, while still treating correctness as my responsibility.
 
 ### Operational robustness
 

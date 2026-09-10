@@ -222,12 +222,12 @@ Numerical stability and architectural decoupling are verified through a dedicate
 
 ### Calculation regression testing
 
-To guarantee that refactoring did not alter underlying mathematical behaviour — such as the intentionally arithmetic cumulative return calculations — core calculation functions are tested against known inputs and expected outputs. These tests enforce exact numerical parity for alpha calculations, sum deviation bucketing, percentage change, and daily return computations.
+Core calculation functions — alpha computation, sum deviation bucketing, percentage change, daily returns — are tested against explicit hardcoded expected values. These are deterministic unit checks that catch unintended changes to the arithmetic; they are not comparisons against historical V9.2C outputs (no golden-master or cross-version output comparison exists).
 
 ### Deterministic fixture harness
 
 Test suites execute without network or broker dependencies — `ib_insync` is an optional dependency and all top-level broker imports are guarded. Offline fixtures in `fixtures/` provide structurally valid synthetic market data. The fixture generator synthesises deterministic multi-asset snapshots to validate data contracts and pipeline transitions.
 
-### State parity checks
+### Calibration/live parity checks
 
-Integration tests verify that `src/calibration/` and `src/implementation/` generate identical scoring metrics when evaluated on identical data frames, preventing subtle scoring drift between research and execution code.
+Parity tests verify that calibration and implementation consume the same canonical scoring constants, constraint functions, and shared definitions from the shared layer. This guards against internal drift between calibration and live code within the reconstruction. These tests inspect shared-definition imports and structural contracts; they do not execute calibration and implementation on identical dataframes and compare their outputs.

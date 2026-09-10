@@ -11,7 +11,7 @@ Comprises two distinct, but interdependent, workflows:
 
 ## Why I built it this way
 
-Nine decisions: calibration/live parity · look-ahead bias · stability gates · transaction costs · behavioural preservation · stale-data handling · human-gated edge cases · reconciliation · failure isolation.
+Nine decisions: calibration/live parity · look-ahead bias · stability gates · transaction costs · non-textbook behaviour · stale-data handling · human-gated edge cases · reconciliation · failure isolation.
 
 ### Model risk and validation
 
@@ -65,9 +65,11 @@ This was particularly important because the system contained deliberately non-ob
 
 AI was therefore most useful as a way of increasing the amount of code and system reasoning I could inspect, rather than replacing the need to understand the system myself.
 
-I validated the resulting architecture through tests, import and dependency checks, synthetic fixtures, and tracing behaviour back to the original implementation.
+I validated the resulting architecture through the test suite, import and dependency checks, synthetic fixtures, and review of core calculations against hand-computed values.
 
-The important distinction is that AI generated or suggested implementation, but I owned the architectural decisions and the validation of those decisions. This allowed me to work effectively across a codebase substantially larger and more complex than I could comfortably hold in my head at once, while still treating correctness as my responsibility.
+What this does not include is a golden-master comparison against the pre-refactor system. The tests verify this rebuild's own invariants — that calibration and live pipelines consume the same constants, that data contracts hold, that core arithmetic is correct — not agreement with prior output. Four known differences from the pre-refactor version are recorded in CHANGE_MANUAL.md: three deliberate settings changes, and one calculation change still under verification.
+
+The important distinction is that AI generated or suggested implementation, but I owned the architectural decisions and the validation of those decisions. This allowed me to work effectively across a codebase substantially larger and more complex than I could comfortably hold in my head at once, while still owning correctness and the validation of it.
 
 ### Operational robustness
 
